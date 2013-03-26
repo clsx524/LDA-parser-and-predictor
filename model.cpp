@@ -233,7 +233,7 @@ int model::init(int argc, char ** argv) {
 
 int model::load_model(string model_name) {
     string::size_type i, j;
-    
+    strtokenizer strtok, tok;
     string filename = dir + model_name + tassign_suffix;
     FILE * fin = fopen(filename.c_str(), "r");
     if (!fin) {
@@ -257,7 +257,7 @@ int model::load_model(string model_name) {
 	}
 	
 	line = buff;
-	strtokenizer strtok(line, " \t\r\n", false);
+	strtok.strtokenizer_operate(line, " \t\r\n", false);
 	int length = strtok.count_tokens();
 	
 	vector<int> words;
@@ -265,7 +265,7 @@ int model::load_model(string model_name) {
 	for (j = 0; j < (string::size_type)length; j++) {
 	    string token = strtok.token(j);
     
-	    strtokenizer tok(token, ":", false);
+	    tok.strtokenizer_operate(token, ":", false);
 	    if (tok.count_tokens() != 2) {
 		printf("Invalid word-topic assignment line!\n");
 		return 1;
@@ -736,19 +736,22 @@ int model::init_estc() {
 }
 
 int model::init_preprocess() {
-    string ofile = dir + originFile, str;
+    string ofile = dir.append(originFile), str;
     string output = dir + "[output]" + originFile;
     ifstream fin; ofstream fout;
     fin.open(ofile.c_str(), ifstream::in);
     fout.open(output.c_str(), ofstream::ate);
+    strtokenizer strtok;
+
     if (!fin.is_open()) {
         printf("Cannot open file %s to read!\n", ofile.c_str());
         return 1;
     }  
     while (fin >> str) {
-        strtokenizer strtok(str, "", true);
-        cout << strtok.token(0)<< endl;
-        fout << strtok.token(0) << " ";
+        strtok.strtokenizer_operate(str, "", true);
+    }
+    for (vector<string>::size_type i = 0; i < strtok.count_tokens(); i++) {
+        fout << strtok.token(i) << " ";
     }
     fout << endl;
     return 0;

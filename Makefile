@@ -1,10 +1,11 @@
-CC=g++
-CCFLAGS = -pedantic -Wall -Werror -g -O3
+CC=clang++
+CCFLAGS = -pedantic -std=c++11 -stdlib=libc++ -Wall -Werror -g 
+#-O3
 
 all: main
 
 main: dataset.o strtokenizer.o utils.o model.o lda.cpp
-	$(CC) $(CCFLAGS) -o lda lda.cpp dataset.o strtokenizer.o utils.o model.o
+	$(CC) $(CCFLAGS) -o lda lda.cpp dataset.o strtokenizer.o utils.o model.o -lm
 	strip lda
 
 strtokenizer.o:	strtokenizer.h strtokenizer.cpp

@@ -2,9 +2,12 @@
 
 using namespace std;
 
-strtokenizer::strtokenizer(string str, string seperators, bool preEnable) {
+void strtokenizer::strtokenizer_operate(string str, string seperators, bool preEnable) {
+    z = NULL;
     if (preEnable == true) {
-        read_stop_list();
+        if (stopListRead == false) {
+            read_stop_list();
+        }
         preprocess(str);
     } else {
         parse(str, seperators);
@@ -13,15 +16,22 @@ strtokenizer::strtokenizer(string str, string seperators, bool preEnable) {
 
 void strtokenizer::preprocess(string text) {
     text = verify(text);
-    boost::regex re1("([a-z])([0-9])");
-    boost::regex re2("([0-9])([a-z])");
-    boost::regex re3("\\s+");
-    text = boost::regex_replace(text, re1, "\\1 \\2");
-    text = boost::regex_replace(text, re2, "\\1 \\2");
-    text = boost::regex_replace(text, re3, " ");
-    text = stem(z,text,(int)text.size());
+    regex re1("([a-z])([0-9])");
+    regex re2("([0-9])([a-z])");
+    regex re3("\\s+");
+    //text = regex_replace(text, re1, "\\1 \\2");
+    //text = regex_replace(text, re2, "\\1 \\2");
+    //text = regex_replace(text, re3, " ");
+    if (text.size() > 2)
+    {
+        text = stem(text);
+    }
     text = stopword_remover(text);
-    tokens.push_back(text);
+    if (text != "")
+    {
+        tokens.push_back(text);
+    }
+    
 }
 
 void strtokenizer::parse(string str, string seperators) {
@@ -45,40 +55,49 @@ void strtokenizer::read_stop_list() {
     string src = "stop-words/stoplist-nsp.regex", str, tmp;
     ifstream fp;
     fp.open(src.c_str(), ifstream::in);
-    for (char i = 'a'; i < 'z' + 1; ++i) {
-        tmp.clear();
-        tmp.copy(&i,1);
-        stopList.push_back(tmp);
+    if (!fp.is_open())
+    {
+        cout << "can't open stop list" << endl;
+    }
+    for (int i = (int)'a'; i <= (int)'z'; ++i) {
+        tmp = toascii(i);
+        stopList.push_back(tmp.substr(0,1));
+        
     }
     getline(fp,str);
-    while (!fp.eof()) {
+    getline(fp,str);
+    while (1) {
         getline(fp, str);
+        if (fp.eof())
+        {
+            break;
+        }
         str = str.substr(5,str.size()-3-5);
         str.erase(find(str.begin(), str.end(), ']'));
         transform(str.begin(),str.end(),str.begin(),::tolower);
         stopList.push_back(str);
     }
+    stopListRead = true;
 }
 
 string strtokenizer::stopword_remover(string str) {
     for (vector<string>::size_type i = 0; i < stopList.size(); i++) {
-        if (stopList[i] == str) {
+        if (stopList[i].compare(str) == 0) {
             return "";
-        } else {
-            return str;
         }
     }
     return str;
 }
 
 string strtokenizer::verify(string str) {
-    for (string::iterator it = str.begin(); it < str.end(); ++it) {
-        if (toascii(*it) > 127) {
-            str.erase(it);
-        } else if (isdigit(*it) || isalpha(*it)) {
+    for (string::size_type i = 0; i < str.size(); ++i) {
+        if (toascii(str[i]) > 127) {
+            str.erase(i);
+        } else if (isalpha(str[i])) {
+            str[i] = tolower(str[i]);
             continue;
         } else {
-            *it = ' ';
+            str.erase(i);
         }
     }
     return str;
@@ -108,14 +127,16 @@ string strtokenizer::token(int i) {
     }
 }
 
-/* cons(z, i) is true <=> b[i] is a consonant. ('b' means 'z->str', but here
+/* cons(i) is true <=> b[i] is a consonant. ('b' means 'z->str', but here
  and below we drop 'z->' in comments.
  */
-bool strtokenizer::cons(stemmer* z, int i) {
-    char* b = z->str;
+bool strtokenizer::cons(int i) {
+    string b = z->str;
     switch (b[i]) {
         case 'a': case 'e': case 'i': case 'o': case 'u': return false;
-        case 'y': return (i == 0) ? true : !cons(z, i - 1);
+        case 'y': 
+            if (i == 0) {return true;}
+            else {return !cons(i - 1);}
         default: return true;
     }
 }
@@ -131,26 +152,27 @@ bool strtokenizer::cons(stemmer* z, int i) {
  ....
  */
 
-int strtokenizer::m(stemmer* z) {
+int strtokenizer::m() {
     int n = 0;
     int i = 0;
     int j = z->j;
-    while(true)
-    {  if (i > j) return n;
-        if (! cons(z, i)) break; i++;
+    while(true) {  
+        if (i > j) return n;
+        if (!cons(i)) break; 
+        i++;
     }
     i++;
-    while(true)
-    {  while(true)
-    {  if (i > j) return n;
-        if (cons(z, i)) break;
-        i++;
-    }
+    while(true) {  
+        while(true) {  
+            if (i > j) return n;
+            if (cons(i)) break;
+            i++;
+        }
         i++;
         n++;
-        while(true)
-        {  if (i > j) return n;
-            if (! cons(z, i)) break;
+        while(true) {  
+            if (i > j) return n;
+            if (! cons(i)) break;
             i++;
         }
         i++;
@@ -159,24 +181,25 @@ int strtokenizer::m(stemmer* z) {
 
 /* vowelinstem(z) is true <=> 0,...j contains a vowel */
 
-bool strtokenizer::vowelinstem(stemmer* z)
+bool strtokenizer::vowelinstem()
 {
     int j = z->j;
-    int i; for (i = 0; i <= j; i++) if (! cons(z, i)) return true;
+    int i; 
+    for (i = 0; i <= j; i++) {
+        if (!cons(i)) return true;
+    }
     return false;
 }
 
-/* doublec(z, j) is true <=> j,(j-1) contain a double consonant. */
+/* doublec(j) is true <=> j,(j-1) contain a double consonant. */
 
-bool strtokenizer::doublec(stemmer* z, int j)
-{
-    char* b = z->str;
+bool strtokenizer::doublec(int j) {
     if (j < 1) return false;
-    if (b[j] != b[j - 1]) return false;
-    return cons(z, j);
+    if (z->str[j] != z->str[j - 1]) return false;
+    return cons(j);
 }
 
-/* cvc(z, i) is true <=> i-2,i-1,i has the form consonant - vowel - consonant
+/* cvc(i) is true <=> i-2,i-1,i has the form consonant - vowel - consonant
  and also if the second c is not w,x or y. this is used when trying to
  restore an e at the end of a short word. e.g.
  
@@ -185,40 +208,41 @@ bool strtokenizer::doublec(stemmer* z, int j)
  
  */
 
-bool strtokenizer::cvc(stemmer * z, int i) {
-    if (i < 2 || !cons(z, i) || cons(z, i - 1) || !cons(z, i - 2)) return false;
+bool strtokenizer::cvc(int i) {
+    if (i < 2 || !cons(i) || cons(i - 1) || !cons(i - 2)) return false;
     char ch = z->str[i];
     if (ch  == 'w' || ch == 'x' || ch == 'y') return false;
     return true;
 }
 
-/* ends(z, s) is true <=> 0,...k ends with the string s. */
+/* ends(s) is true <=> 0,...k ends with the string s. */
 
-bool strtokenizer::ends(stemmer * z, const char * s) {  
-    int length = s[0];
-    char * b = z->str;
-    int k = z->k;
-    if (s[length] != b[k]) return false; /* tiny speed-up */
-    if (length > k + 1) return false;
-    if (memcmp(b + k - length + 1, s + 1, length) != 0) return false;
-    z->j = k-length;
+bool strtokenizer::ends(string s) { 
+    int length = s.size(); 
+    int k = (z->str).size();
+
+    if (s.back() != (z->str).back()) return false; /* tiny speed-up */
+    if (s.size() > (z->str).size()) return false;
+    if ((z->str).substr(k-length,length).compare(s) != 0) return false;
+    //if (memcmp(b + k - length + 1, s + 1, length) != 0) return false;
+    z->j = k-length-1;
     return true;
 }
 
-/* setto(z, s) sets (j+1),...k to the characters in the string s, readjusting
+/* setto(s) sets (j+1),...k to the characters in the string s, readjusting
  k. */
 
-void strtokenizer::setto(stemmer * z, const char * s) {
-    int length = s[0];
+void strtokenizer::setto(string s) {
     int j = z->j;
-    char * b = z->str;
-    memmove(b + j + 1, s + 1, length);
-    z->k = j+length;
+    cout << z->str << " ";
+    z->str = (z->str).substr(0, j+1).append(s);
+    cout << z->str << endl;
+    //memmove(b + j + 1, s + 1, length);
 }
 
-/* r(z, s) is used further down. */
+/* r(s) is used further down. */
 
-void strtokenizer::r(stemmer * z, const char * s) { if (m(z) > 0) setto(z, s); }
+void strtokenizer::r(string s) { if (m() > 0) setto(s); }
 
 /* step1ab(z) gets rid of plurals and -ed or -ing. e.g.
  
@@ -242,32 +266,33 @@ void strtokenizer::r(stemmer * z, const char * s) { if (m(z) > 0) setto(z, s); }
  
  */
 
-void strtokenizer::step1ab(stemmer * z) {
-    char * b = z->str;
-    if (b[z->k] == 's')
-    {  if (ends(z, "\04" "sses")) z->k -= 2; else
-        if (ends(z, "\03" "ies")) setto(z, "\01" "i"); else
-            if (b[z->k - 1] != 's') z->k--;
+void strtokenizer::step1ab() {
+    if ((z->str).back() == 's') {  
+        if (ends("sses")) (z->str).erase((z->str).size()-2,2); 
+        else if (ends("ies")) setto("i"); 
+        else if ((z->str)[(z->str).size()-2] != 's') (z->str).erase((z->str).size()-1,1);
     }
-    if (ends(z, "\03" "eed")) { if (m(z) > 0) z->k--; } else
-        if ((ends(z, "\02" "ed") || ends(z, "\03" "ing")) && vowelinstem(z))
-        {  z->k = z->j;
-            if (ends(z, "\02" "at")) setto(z, "\03" "ate"); else
-                if (ends(z, "\02" "bl")) setto(z, "\03" "ble"); else
-                    if (ends(z, "\02" "iz")) setto(z, "\03" "ize"); else
-                        if (doublec(z, z->k)) {
-                            z->k--;
-                            int ch = b[z->k];
-                            if (ch == 'l' || ch == 's' || ch == 'z') z->k++;
-                        }
-                        else if (m(z) == 1 && cvc(z, z->k)) setto(z, "\01" "e");
+    if (ends("eed")) { 
+        if (m() > 0) (z->str).erase((z->str).size()-1,1); 
+    } 
+    else if ((ends("ed") || ends("ing")) && vowelinstem()) {  
+        z->str = (z->str).substr(0,z->j+1);
+        if (ends("at")) setto("ate"); 
+        else if (ends("bl")) setto("ble"); 
+        else if (ends("iz")) setto("ize"); 
+        else if (doublec((z->str).size()-1)) {
+            int ch = (z->str).back();
+            if (ch == 'l' || ch == 's' || ch == 'z') {}
+            else {(z->str).erase((z->str).size()-1,1);}
         }
+        else if (m() == 1 && cvc((z->str).size()-1)) setto("e");
+    }
 }
 
 /* step1c(z) turns terminal y to i when there is another vowel in the stem. */
 
-void strtokenizer::step1c(stemmer * z) {
-    if (ends(z, "\01" "y") && vowelinstem(z)) z->str[z->k] = 'i';
+void strtokenizer::step1c() {
+    if (ends("y") && vowelinstem()) z->str[(z->str).size()-1] = 'i';
 }
 
 
@@ -275,47 +300,47 @@ void strtokenizer::step1c(stemmer * z) {
  -ation) maps to -ize etc. note that the string before the suffix must give
  m(z) > 0. */
 
-void strtokenizer::step2(stemmer * z) {
-    switch (z->str[z->k-1]) {
+void strtokenizer::step2() {
+    switch (z->str[(z->str).size()-2]) {
         case 'a': 
-            if (ends(z, "\07" "ational")) { r(z, "\03" "ate"); break; }
-            if (ends(z, "\06" "tional")) { r(z, "\04" "tion"); break; }
+            if (ends("ational")) { r("ate"); break; }
+            if (ends("tional")) { r("tion"); break; }
             break;
         case 'c': 
-            if (ends(z, "\04" "enci")) { r(z, "\04" "ence"); break; }
-            if (ends(z, "\04" "anci")) { r(z, "\04" "ance"); break; }
+            if (ends("enci")) { r("ence"); break; }
+            if (ends("anci")) { r("ance"); break; }
             break;
         case 'e': 
-            if (ends(z, "\04" "izer")) { r(z, "\03" "ize"); break; }
+            if (ends("izer")) { r("ize"); break; }
             break;
         case 'l': 
-            if (ends(z, "\03" "bli")) { r(z, "\03" "ble"); break; } /*-DEPARTURE-*/
+            if (ends("bli")) { r("ble"); break; } /*-DEPARTURE-*/
             
             /* To match the published algorithm, replace this line with
-             case 'l': if (ends(z, "\04" "abli")) { r(z, "\04" "able"); break; } */
+             case 'l': if (ends("abli")) { r("able"); break; } */
             
-            if (ends(z, "\04" "alli")) { r(z, "\02" "al"); break; }
-            if (ends(z, "\05" "entli")) { r(z, "\03" "ent"); break; }
-            if (ends(z, "\03" "eli")) { r(z, "\01" "e"); break; }
-            if (ends(z, "\05" "ousli")) { r(z, "\03" "ous"); break; }
+            if (ends("alli")) { r("al"); break; }
+            if (ends("entli")) { r("ent"); break; }
+            if (ends("eli")) { r("e"); break; }
+            if (ends("ousli")) { r("ous"); break; }
             break;
         case 'o': 
-            if (ends(z, "\07" "ization")) { r(z, "\03" "ize"); break; }
-            if (ends(z, "\05" "ation")) { r(z, "\03" "ate"); break; }
-            if (ends(z, "\04" "ator")) { r(z, "\03" "ate"); break; }
+            if (ends("ization")) { r("ize"); break; }
+            if (ends("ation")) { r("ate"); break; }
+            if (ends("ator")) { r("ate"); break; }
             break;
         case 's': 
-            if (ends(z, "\05" "alism")) { r(z, "\02" "al"); break; }
-            if (ends(z, "\07" "iveness")) { r(z, "\03" "ive"); break; }
-            if (ends(z, "\07" "fulness")) { r(z, "\03" "ful"); break; }
-            if (ends(z, "\07" "ousness")) { r(z, "\03" "ous"); break; }
+            if (ends("alism")) { r("al"); break; }
+            if (ends("iveness")) { r("ive"); break; }
+            if (ends("fulness")) { r("ful"); break; }
+            if (ends("ousness")) { r("ous"); break; }
             break;
         case 't': 
-            if (ends(z, "\05" "aliti")) { r(z, "\02" "al"); break; }
-            if (ends(z, "\05" "iviti")) { r(z, "\03" "ive"); break; }
-            if (ends(z, "\06" "biliti")) { r(z, "\03" "ble"); break; }
+            if (ends("aliti")) { r("al"); break; }
+            if (ends("iviti")) { r("ive"); break; }
+            if (ends("biliti")) { r("ble"); break; }
             break;
-        case 'g': if (ends(z, "\04" "logi")) { r(z, "\03" "log"); break; } /*-DEPARTURE-*/
+        case 'g': if (ends("logi")) { r("log"); break; } /*-DEPARTURE-*/
             
             /* To match the published algorithm, delete this line */
             
@@ -323,97 +348,97 @@ void strtokenizer::step2(stemmer * z) {
 
 /* step3(z) deals with -ic-, -full, -ness etc. similar strategy to step2. */
 
-void strtokenizer::step3(stemmer * z) {
-    switch (z->str[z->k]) {
-        case 'e': if (ends(z, "\05" "icate")) { r(z, "\02" "ic"); break; }
-            if (ends(z, "\05" "ative")) { r(z, "\00" ""); break; }
-            if (ends(z, "\05" "alize")) { r(z, "\02" "al"); break; }
+void strtokenizer::step3() {
+    switch ((z->str).back()) {
+        case 'e': 
+            if (ends("icate")) { r("ic"); break; }
+            if (ends("ative")) { r(""); break; }
+            if (ends("alize")) { r("al"); break; }
             break;
-        case 'i': if (ends(z, "\05" "iciti")) { r(z, "\02" "ic"); break; }
+        case 'i': 
+            if (ends("iciti")) { r("ic"); break; }
             break;
-        case 'l': if (ends(z, "\04" "ical")) { r(z, "\02" "ic"); break; }
-            if (ends(z, "\03" "ful")) { r(z, "\00" ""); break; }
+        case 'l': 
+            if (ends("ical")) { r("ic"); break; }
+            if (ends("ful")) { r(""); break; }
             break;
-        case 's': if (ends(z, "\04" "ness")) { r(z, "\00" ""); break; }
+        case 's': 
+            if (ends("ness")) { r(""); break; }
             break;
-    } }
+    } 
+}
 
 /* step4(z) takes off -ant, -ence etc., in context <c>vcvc<v>. */
 
-void strtokenizer::step4(stemmer * z) {
-    switch (z->str[z->k-1]) {
+void strtokenizer::step4() {
+    switch (z->str[(z->str).size()-2]) {
         case 'a': 
-            if (ends(z, "\02" "al")) break; return;
+            if (ends("al")) break; return;
         case 'c': 
-            if (ends(z, "\04" "ance")) break;
-            if (ends(z, "\04" "ence")) break; return;
+            if (ends("ance")) break;
+            if (ends("ence")) break; return;
         case 'e': 
-            if (ends(z, "\02" "er")) break; return;
+            if (ends("er")) break; return;
         case 'i': 
-            if (ends(z, "\02" "ic")) break; return;
+            if (ends("ic")) break; return;
         case 'l': 
-            if (ends(z, "\04" "able")) break;
-            if (ends(z, "\04" "ible")) break; return;
+            if (ends("able")) break;
+            if (ends("ible")) break; return;
         case 'n': 
-            if (ends(z, "\03" "ant")) break;
-            if (ends(z, "\05" "ement")) break;
-            if (ends(z, "\04" "ment")) break;
-            if (ends(z, "\03" "ent")) break; return;
+            if (ends("ant")) break;
+            if (ends("ement")) break;
+            if (ends("ment")) break;
+            if (ends("ent")) break; return;
         case 'o': 
-            if (ends(z, "\03" "ion") && (z->str[z->j] == 's' || z->str[z->j] == 't')) break;
-            if (ends(z, "\02" "ou")) break; return;
+            if (ends("ion") && (z->str[z->j] == 's' || z->str[z->j] == 't')) break;
+            if (ends("ou")) break; return;
             /* takes care of -ous */
         case 's': 
-            if (ends(z, "\03" "ism")) break; return;
+            if (ends("ism")) break; return;
         case 't': 
-            if (ends(z, "\03" "ate")) break;
-            if (ends(z, "\03" "iti")) break; return;
+            if (ends("ate")) break;
+            if (ends("iti")) break; return;
         case 'u': 
-            if (ends(z, "\03" "ous")) break; return;
+            if (ends("ous")) break; return;
         case 'v': 
-            if (ends(z, "\03" "ive")) break; return;
+            if (ends("ive")) break; return;
         case 'z': 
-            if (ends(z, "\03" "ize")) break; return;
+            if (ends("ize")) break; return;
         default: return;
     }
-    if (m(z) > 1) z->k = z->j;
+    if (m() > 1) {z->str = (z->str).substr(0,z->j+1);}
 }
 
 /* step5(z) removes a final -e if m(z) > 1, and changes -ll to -l if
  m(z) > 1. */
 
-void strtokenizer::step5(struct stemmer * z)
-{
-    char * b = z->str;
-    z->j = z->k;
-    if (b[z->k] == 'e') {
-        int a = m(z);
-        if (a > 1 || a == 1 && !cvc(z, z->k - 1)) z->k--;
+void strtokenizer::step5() {
+    z->j = (z->str).size()-1;
+    if ((z->str).back() == 'e') {
+        int a = m();
+        if (a > 1 || (a == 1 && !cvc((z->str).size()-2))) (z->str).erase((z->str).size()-1,1);
     }
-    if (b[z->k] == 'l' && doublec(z, z->k) && m(z) > 1) z->k--;
+    if ((z->str).back() == 'l' && doublec((z->str).size()-1) && m() > 1) (z->str).erase((z->str).size()-1,1);
 }
 
-/* In stem(z, b, k), b is a char pointer, and the string to be stemmed is
+/* In stem(b, k), b is a char pointer, and the string to be stemmed is
  from b[0] to b[k] inclusive.  Possibly b[k+1] == '\0', but it is not
  important. The stemmer adjusts the characters b[0] ... b[k] and returns
  the new end-point of the string, k'. Stemming never increases word
  length, so 0 <= k' <= k.
  */
 
-string strtokenizer::stem(stemmer * z, string b, int k)
-{
+string strtokenizer::stem(string b) {
     string str;
-    assert(k >= 1); /*-DEPARTURE-*/
-    z->str = (char*)b.c_str();
-    z->k = k; /* copy the parameters into z */
-    
-    /* With this line, strings of length 1 or 2 don't go through the
-     stemming process, although no mention is made of this in the
-     published algorithm. Remove the line to match the published
-     algorithm. */
-    
-    step1ab(z); step1c(z); step2(z); step3(z); step4(z); step5(z);
-    str.copy(z->str,z->k);
-    return str;
+    if (z == NULL)
+    {
+        z = new stemmer(b);
+    } else {
+        z->str = b;
+    }
+
+    step1ab(); step1c(); step2(); step3(); step4(); step5();
+    //str.copy(z->str,z->k);
+    return z->str;
 }
 

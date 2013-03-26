@@ -49,7 +49,7 @@ int dataset::write_wordmap(string wordmapfile, mapword2id * pword2id) {
 // write data of file into a pword2id
 int dataset::read_wordmap(string wordmapfile, mapword2id * pword2id) {
     pword2id->clear();
-    
+    strtokenizer strtok;
     FILE * fin = fopen(wordmapfile.c_str(), "r");
     if (!fin) {
 		printf("Cannot open file %s to read!\n", wordmapfile.c_str());
@@ -65,7 +65,7 @@ int dataset::read_wordmap(string wordmapfile, mapword2id * pword2id) {
     for (int i = 0; i < nwords; i++) {
 		fgets(buff, BUFF_SIZE_SHORT - 1, fin);
 		line = buff;
-		strtokenizer strtok(line, " \t\r\n", false);
+		strtok.strtokenizer_operate(line, " \t\r\n", false);
 		if (strtok.count_tokens() != 2) {
 	    	continue;
 		}
@@ -80,7 +80,7 @@ int dataset::read_wordmap(string wordmapfile, mapword2id * pword2id) {
 
 int dataset::read_wordmap(string wordmapfile, mapid2word * pid2word) {
     pid2word->clear();
-    
+    strtokenizer strtok;
     FILE * fin = fopen(wordmapfile.c_str(), "r");
     if (!fin) {
 	printf("Cannot open file %s to read!\n", wordmapfile.c_str());
@@ -97,7 +97,7 @@ int dataset::read_wordmap(string wordmapfile, mapid2word * pid2word) {
 	fgets(buff, BUFF_SIZE_SHORT - 1, fin);
 	line = buff;
 	
-	strtokenizer strtok(line, " \t\r\n", false);
+	strtok.strtokenizer_operate(line, " \t\r\n", false);
 	if (strtok.count_tokens() != 2) {
 	    continue;
 	}
@@ -140,11 +140,11 @@ int dataset::read_trndata(string dfile, string wordmapfile) {
     
     // set number of words to zero
     V = 0;
-    
+    strtokenizer strtok;
     for (int i = 0; i < M; i++) {
 		fgets(buff, BUFF_SIZE_LONG - 1, fin);
 		line = buff;
-		strtokenizer strtok(line, " \t\r\n", false);
+		strtok.strtokenizer_operate(line, " \t\r\n", false);
 		int length = strtok.count_tokens();
 
 		if (length <= 0) {
@@ -224,11 +224,11 @@ int dataset::read_newdata(string dfile, string wordmapfile) {
     
     // set number of words to zero
     V = 0;
-    
+    strtokenizer strtok;
     for (int i = 0; i < M; i++) {
 		fgets(buff, BUFF_SIZE_LONG - 1, fin);
 		line = buff;
-		strtokenizer strtok(line, " \t\r\n",false);
+		strtok.strtokenizer_operate(line, " \t\r\n",false);
 		int length = strtok.count_tokens();
 	
 		vector<int> doc;
@@ -310,11 +310,11 @@ int dataset::read_newdata_withrawstrs(string dfile, string wordmapfile) {
     
     // set number of words to zero
     V = 0;
-    
+    strtokenizer strtok;
     for (int i = 0; i < M; i++) {
 		fgets(buff, BUFF_SIZE_LONG - 1, fin);
 		line = buff;
-		strtokenizer strtok(line, " \t\r\n", false);
+		strtok.strtokenizer_operate(line, " \t\r\n", false);
 		int length = strtok.count_tokens();
 	
 		vector<int> doc;

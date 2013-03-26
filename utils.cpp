@@ -279,10 +279,11 @@ int utils::read_and_parse(string filename, model * pmodel) {
     
     char buff[BUFF_SIZE_SHORT];
     string line;
-    
+    strtokenizer strtok;
+
     while (fgets(buff, BUFF_SIZE_SHORT - 1, fin)) {
         line = buff;
-        strtokenizer strtok(line, "= \t\r\n", false);
+        strtok.strtokenizer_operate(line, "= \t\r\n", false);
         int count = strtok.count_tokens();
         
         if (count != 2) {

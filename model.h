@@ -57,6 +57,7 @@ public:
     string dfile;		// data file    
     string model_name;		// model name
     string originFile;
+
     int model_status;		// model status:
 				// MODEL_STATUS_UNKNOWN: unknown status
 				// MODEL_STATUS_EST: estimating from scratch

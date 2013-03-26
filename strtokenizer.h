@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 #include <cctype>
-#include <boost/regex.hpp>
+#include <regex>
 #include <algorithm>
 #include <assert.h>
 
@@ -40,19 +40,22 @@ protected:
     vector<string> tokens;
     vector<string> stopList;
     int idx;
+    bool stopListRead;
 
     class stemmer {
 	public:
-  		char* str;
-  		int k;
-  		int j;
+  		string str;
+  		int j; // general offset
+        stemmer() : j(0) {}
+        stemmer(const string& s) : str(s), j(0) {}
 	};
 
 	stemmer* z;
 
 public:
-    strtokenizer(string str, string seperators = " ", bool preEnable = false);    
+    strtokenizer() : idx(0), stopListRead(false), z(NULL) {}  
     
+    void strtokenizer_operate(string str, string seperators = " ", bool preEnable = false);
     void parse(string str, string seperators);
     void preprocess(string text);
     
@@ -68,21 +71,21 @@ public:
     string verify(string str);
 
     // stemming processes
-    bool cons(stemmer* z, int i);
-    int m(stemmer* z);
-    bool vowelinstem(stemmer* z);
-    bool doublec(stemmer* z, int j);
-    bool cvc(stemmer * z, int i);
-    bool ends(stemmer * z, const char * s);
-    void setto(stemmer * z, const char * s);
-    void r(stemmer * z, const char * s);
-    void step1ab(stemmer * z);
-    void step1c(stemmer * z);
-    void step2(stemmer * z);
-    void step3(stemmer * z);
-    void step4(stemmer * z);
-    void step5(struct stemmer * z);
-    string stem(stemmer * z, string b, int k);
+    bool cons(int i);
+    int m();
+    bool vowelinstem();
+    bool doublec(int j);
+    bool cvc(int i);
+    bool ends(string s);
+    void setto(string s);
+    void r(string s);
+    void step1ab();
+    void step1c();
+    void step2();
+    void step3();
+    void step4();
+    void step5();
+    string stem(string b);
 };
 
 #endif
