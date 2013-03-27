@@ -1,7 +1,7 @@
-#CC=clang++
-CC=g++
-#CCFLAGS = -pedantic -std=c++11 -stdlib=libc++ -Wall -Werror -g -O3
-CCFLAGS = -pedantic -Wall -Werror -g -O3
+CC=clang++
+#CC=g++
+CCFLAGS = -pedantic -std=c++11 -stdlib=libc++ -Wall -Werror -g -O3
+#CCFLAGS = -pedantic -Wall -Werror -g -O3
 
 all: main
 

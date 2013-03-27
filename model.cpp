@@ -1,34 +1,3 @@
-/*
- * Copyright (C) 2007 by
- *
- * 	Xuan-Hieu Phan
- *	hieuxuan@ecei.tohoku.ac.jp or pxhieu@gmail.com
- * 	Graduate School of Information Sciences
- * 	Tohoku University
- *
- * GibbsLDA++ is a free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published
- * by the Free Software Foundation; either version 2 of the License,
- * or (at your option) any later version.
- *
- * GibbsLDA++ is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with GibbsLDA++; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
- */
-
-/*
- * References:
- * + The Java code of Gregor Heinrich (gregor@arbylon.net)
- *   http://www.arbylon.net/projects/LdaGibbsSampler.java
- * + "Parameter estimation for text analysis" by Gregor Heinrich
- *   http://www.arbylon.net/publications/text-est.pdf
- */
-
 #include "constants.h"
 #include "strtokenizer.h"
 #include "utils.h"
@@ -224,7 +193,9 @@ int model::init(int argc, char ** argv) {
 	        return 1;
 	    }
     } else if (model_status == MODEL_STATUS_PREPROCESS) {
-        if (init_preprocess()) {
+
+    } else if (model_status == MODEL_STATUS_RANKING) {
+        if (init_ranking()) {
             return 1;
         }
     }
@@ -381,20 +352,32 @@ int model::save_model_phi(string filename) {
 }
 
 int model::save_model_others(string filename) {
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::ate);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename.c_str() << " to save!" << endl;
         return 1;
     }
     
-    fprintf(fout, "alpha=%f\n", alpha);
-    fprintf(fout, "beta=%f\n", beta);
-    fprintf(fout, "ntopics=%d\n", K);
-    fprintf(fout, "ndocs=%d\n", M);
-    fprintf(fout, "nwords=%d\n", V);
-    fprintf(fout, "liter=%d\n", liter);
-    
-    fclose(fout);
+    fout << "alpha=" << alpha << endl;
+    fout << "beta=" << beta << endl;
+    fout << "ntopics=" << K << endl;
+    fout << "ndocs=" << M << endl;
+    fout << "nwords=" << V << endl;
+    fout << "liter=" << liter << endl;
+
+    fout << "nwsum=";
+    for (int i = 0; i < K; ++i) {
+        fout << nwsum[i] << " ";
+    }
+    fout << endl << "ndsum=";
+
+    for (int i = 0; i < M; ++i) {
+        fout << ndsum[i] << " ";
+    }
+    fout << endl;
+
+    fout.close();
     
     return 0;
 }
@@ -526,20 +509,32 @@ int model::save_inf_model_newphi(string filename) {
 }
 
 int model::save_inf_model_others(string filename) {
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::ate);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename.c_str() << " to save!" << endl;
         return 1;
     }
     
-    fprintf(fout, "alpha=%f\n", alpha);
-    fprintf(fout, "beta=%f\n", beta);
-    fprintf(fout, "ntopics=%d\n", K);
-    fprintf(fout, "ndocs=%d\n", newM);
-    fprintf(fout, "nwords=%d\n", newV);
-    fprintf(fout, "liter=%d\n", inf_liter);
-    
-    fclose(fout);
+    fout << "alpha=" << alpha << endl;
+    fout << "beta=" << beta << endl;
+    fout << "ntopics=" << K << endl;
+    fout << "ndocs=" << newM << endl;
+    fout << "nwords=" << newV << endl;
+    fout << "liter=" << inf_liter << endl;
+
+    fout << "nwsum=";
+    for (int i = 0; i < K; ++i) {
+        fout << nwsum[i] << " ";
+    }
+    fout << endl << "ndsum=";
+
+    for (int i = 0; i < M; ++i) {
+        fout << ndsum[i] << " ";
+    }
+    fout << endl;
+
+    fout.close();
     
     return 0;
 }
@@ -739,7 +734,7 @@ int model::init_estc() {
     return 0;
 }
 
-int model::init_preprocess() {
+void model::preprocess() {
     ofstream fout;
     string output;
     int size = 0;
@@ -757,7 +752,7 @@ int model::init_preprocess() {
     fout.seekp(0);
     fout << size << endl;
     fout.close();
-    return 0;
+    return;
 }
 
 void model::estimate() {
@@ -1078,6 +1073,57 @@ void model::compute_newphi() {
                 newphi[k][w] = (nw[it->second][k] + newnw[w][k] + beta) / (nwsum[k] + newnwsum[k] + V * beta);
             }
         }
+    }
+}
+
+int model::init_ranking() {
+    if (load_model(model_name)) {
+        printf("Fail to load word-topic assignment file of the model!\n");
+        return 1;
+    }
+    ifstream in;
+    string input = dir + '/' + model_name + theta_suffix, str;
+    strtokenizer strtok;
+    in.open(input.c_str(), ifstream::in);
+    if (!in.is_open()) {
+        cout << "can't open theta file" << endl;
+    }
+    int i = 0;
+    theta = new double*[M];
+    while (1) {
+        getline(in, str);
+        if (in.eof()) {
+            break;
+        }
+        strtok.strtokenizer_operate(str, " \t\r\n", false);
+        assert(strtok.count_tokens() == K);
+        theta[i] = new double[K];
+        for (int j = 0; j < K; ++j) {
+            theta[i][j] = stod(strtok.token(j));
+        }
+        strtok.clear();
+        i++;
+    }
+    return 0;
+}
+
+void model::ranking() {
+    assert(rank_num > 0 && rank_num <= M);
+    vector<pair<int,double> > p;
+    for (int i = 0; i < M; ++i) {
+        double tmp = 0;
+        if (rank_num == i) { 
+            p.push_back(pair<int, double>(i, 0.0));  
+            continue;
+        }
+        for (int j = 0; j < K; ++j) {
+            tmp += theta[i][j]*ndsum[i]*theta[rank_num][j]/nwsum[j];
+        }
+        p.push_back(pair<int, double>(i,tmp));
+    }
+    utils::quicksort(p, 0, p.size()-1);
+    for (int i = 0; i < disp; ++i) {
+        cout << p[i].first << " " << p[i].second << endl;
     }
 }
 

@@ -1,31 +1,9 @@
-/*
- * Copyright (C) 2007 by
- *
- * 	Xuan-Hieu Phan
- *	hieuxuan@ecei.tohoku.ac.jp or pxhieu@gmail.com
- * 	Graduate School of Information Sciences
- * 	Tohoku University
- *
- * GibbsLDA++ is a free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published
- * by the Free Software Foundation; either version 2 of the License,
- * or (at your option) any later version.
- *
- * GibbsLDA++ is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with GibbsLDA++; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
- */
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <iostream>
 #include <fstream>
 #include <string>
 #include <map>
@@ -101,6 +79,8 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     int twords = 0;
     int withrawdata = 0;
     int file_type = 0;
+    int rank_num = 1;
+    int disp = 10;
     
     int i = 0;
     while (i < argc) {
@@ -150,7 +130,15 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
             file_type = atoi(argv[++i]);
 			model_status = MODEL_STATUS_PREPROCESS;
 
-		} else {
+		} else if (arg == "-ranking") {
+            rank_num = atoi(argv[++i]);
+            model_status = MODEL_STATUS_RANKING;
+
+        } else if (arg == "-disp") {
+            disp = atoi(argv[++i]);
+        }
+
+        else {
 	    	// any more?
 		}
 		i++;
@@ -299,16 +287,30 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     	pmodel->model_status = model_status;
     	pmodel->originDir = originDir;
         pmodel->file_type = file_type;
+    }
 
-    	// string::size_type idx = dfile.find_last_of("/");
-     //    if (idx == string::npos) {
-     //        pmodel->dir = "./";
-     //    } else {
-     //        pmodel->dir = dfile.substr(0, idx + 1);
-     //        pmodel->dfile = dfile.substr(idx + 1, dfile.size() - pmodel->dir.size());
-     //        printf("dir = %s\n", pmodel->dir.c_str());
-     //        printf("dFile = %s\n", pmodel->dfile.c_str());
-     //    }
+    if (model_status == MODEL_STATUS_RANKING) {
+        pmodel->disp = disp;
+        pmodel->rank_num = rank_num;
+        pmodel->model_status = model_status;
+
+        if (dir == "") {
+            printf("Please specify model directory please!\n");
+            return 1;
+        }
+        
+        if (model_name == "") {
+            printf("Please specify model name for inference!\n");
+            return 1;
+        }
+        if (dir[dir.size() - 1] != '/') {
+            dir += "/";
+        }
+        pmodel->dir = dir;
+        pmodel->model_name = model_name;
+        if (read_and_parse(pmodel->dir + pmodel->model_name + pmodel->others_suffix, pmodel)) {
+            return 1;
+        }
     }
     
     if (model_status == MODEL_STATUS_UNKNOWN) {
@@ -341,12 +343,6 @@ int utils::read_and_parse(string filename, model * pmodel) {
     while (fgets(buff, BUFF_SIZE_SHORT - 1, fin)) {
         line = buff;
         strtok.strtokenizer_operate(line, "= \t\r\n", false);
-        int count = strtok.count_tokens();
-        
-        if (count != 2) {
-            // invalid, ignore this line
-            continue;
-        }
         
         string optstr = strtok.token(0);
         string optval = strtok.token(1);
@@ -369,6 +365,18 @@ int utils::read_and_parse(string filename, model * pmodel) {
         } else if (optstr == "liter") {
             pmodel->liter = atoi(optval.c_str());
             
+        } else if (optstr == "nwsum") {
+            assert((int)strtok.count_tokens() == pmodel->K+1);
+            pmodel->nwsum = new int[pmodel->K];
+            for (int i = 0; i < pmodel->K; ++i) {
+                pmodel->nwsum[i] = stoi(strtok.token(i+1));
+            }
+        } else if (optstr == "ndsum") {
+            assert((int)strtok.count_tokens() == pmodel->M+1);
+            pmodel->ndsum = new int[pmodel->M];
+            for (int i = 0; i < pmodel->M; ++i) {
+                pmodel->ndsum[i] = stoi(strtok.token(i+1));
+            }
         } else {
             // any more?
         }
