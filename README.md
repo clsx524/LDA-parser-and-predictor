@@ -1,4 +1,4 @@
-590Project
+LDA parser and predictor
 ==========
 
 ## preprocess the files
