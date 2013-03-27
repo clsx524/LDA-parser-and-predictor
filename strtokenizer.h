@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 #include <cctype>
-#include <regex>
+//#include <regex>
 #include <algorithm>
 #include <assert.h>
 
@@ -53,17 +53,23 @@ protected:
 	stemmer* z;
 
 public:
-    strtokenizer() : idx(0), stopListRead(false), z(NULL) {}  
+    strtokenizer() : idx(0), stopListRead(false), z(NULL) {
+        if (stopListRead == false) {
+            read_stop_list();
+        }
+    }  
     
     void strtokenizer_operate(string str, string seperators = " ", bool preEnable = false);
     void parse(string str, string seperators);
     void preprocess(string text);
     
-    int count_tokens();
+    vector<string>::size_type count_tokens();
     string next_token();   
     void start_scan();
 
     string token(int i);
+    void clear();
+    void print();
 
     // read stop list
     void read_stop_list();

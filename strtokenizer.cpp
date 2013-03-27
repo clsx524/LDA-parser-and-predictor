@@ -5,9 +5,6 @@ using namespace std;
 void strtokenizer::strtokenizer_operate(string str, string seperators, bool preEnable) {
     z = NULL;
     if (preEnable == true) {
-        if (stopListRead == false) {
-            read_stop_list();
-        }
         preprocess(str);
     } else {
         parse(str, seperators);
@@ -16,9 +13,9 @@ void strtokenizer::strtokenizer_operate(string str, string seperators, bool preE
 
 void strtokenizer::preprocess(string text) {
     text = verify(text);
-    regex re1("([a-z])([0-9])");
-    regex re2("([0-9])([a-z])");
-    regex re3("\\s+");
+    //regex re1("([a-z])([0-9])");
+    //regex re2("([0-9])([a-z])");
+    //regex re3("\\s+");
     //text = regex_replace(text, re1, "\\1 \\2");
     //text = regex_replace(text, re2, "\\1 \\2");
     //text = regex_replace(text, re3, " ");
@@ -103,7 +100,7 @@ string strtokenizer::verify(string str) {
     return str;
 }
 
-int strtokenizer::count_tokens() {
+vector<string>::size_type strtokenizer::count_tokens() {
     return tokens.size();
 }
 
@@ -127,6 +124,16 @@ string strtokenizer::token(int i) {
     }
 }
 
+void strtokenizer::clear() {
+    tokens.clear();
+    idx = 0;
+}
+
+void strtokenizer::print() {
+    for (vector<string>::size_type i = 0; i < tokens.size(); i++) {
+        cout << tokens[i] << endl;
+    }
+}
 /* cons(i) is true <=> b[i] is a consonant. ('b' means 'z->str', but here
  and below we drop 'z->' in comments.
  */
@@ -220,8 +227,9 @@ bool strtokenizer::cvc(int i) {
 bool strtokenizer::ends(string s) { 
     int length = s.size(); 
     int k = (z->str).size();
+    string b = z->str;
 
-    if (s.back() != (z->str).back()) return false; /* tiny speed-up */
+    if (s[s.size()-1] != b[b.size()-1]) return false; /* tiny speed-up */
     if (s.size() > (z->str).size()) return false;
     if ((z->str).substr(k-length,length).compare(s) != 0) return false;
     //if (memcmp(b + k - length + 1, s + 1, length) != 0) return false;
@@ -234,9 +242,7 @@ bool strtokenizer::ends(string s) {
 
 void strtokenizer::setto(string s) {
     int j = z->j;
-    cout << z->str << " ";
     z->str = (z->str).substr(0, j+1).append(s);
-    cout << z->str << endl;
     //memmove(b + j + 1, s + 1, length);
 }
 
@@ -267,7 +273,7 @@ void strtokenizer::r(string s) { if (m() > 0) setto(s); }
  */
 
 void strtokenizer::step1ab() {
-    if ((z->str).back() == 's') {  
+    if ((z->str)[(z->str).size()-1] == 's') {  
         if (ends("sses")) (z->str).erase((z->str).size()-2,2); 
         else if (ends("ies")) setto("i"); 
         else if ((z->str)[(z->str).size()-2] != 's') (z->str).erase((z->str).size()-1,1);
@@ -281,7 +287,7 @@ void strtokenizer::step1ab() {
         else if (ends("bl")) setto("ble"); 
         else if (ends("iz")) setto("ize"); 
         else if (doublec((z->str).size()-1)) {
-            int ch = (z->str).back();
+            int ch = (z->str)[(z->str).size()-1];
             if (ch == 'l' || ch == 's' || ch == 'z') {}
             else {(z->str).erase((z->str).size()-1,1);}
         }
@@ -349,7 +355,7 @@ void strtokenizer::step2() {
 /* step3(z) deals with -ic-, -full, -ness etc. similar strategy to step2. */
 
 void strtokenizer::step3() {
-    switch ((z->str).back()) {
+    switch ((z->str)[(z->str).size()-1]) {
         case 'e': 
             if (ends("icate")) { r("ic"); break; }
             if (ends("ative")) { r(""); break; }
@@ -414,11 +420,11 @@ void strtokenizer::step4() {
 
 void strtokenizer::step5() {
     z->j = (z->str).size()-1;
-    if ((z->str).back() == 'e') {
+    if ((z->str)[(z->str).size()-1] == 'e') {
         int a = m();
         if (a > 1 || (a == 1 && !cvc((z->str).size()-2))) (z->str).erase((z->str).size()-1,1);
     }
-    if ((z->str).back() == 'l' && doublec((z->str).size()-1) && m() > 1) (z->str).erase((z->str).size()-1,1);
+    if ((z->str)[(z->str).size()-1] == 'l' && doublec((z->str).size()-1) && m() > 1) (z->str).erase((z->str).size()-1,1);
 }
 
 /* In stem(b, k), b is a char pointer, and the string to be stemmed is

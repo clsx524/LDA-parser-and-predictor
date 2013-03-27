@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2007 by
- * 
+ *
  * 	Xuan-Hieu Phan
  *	hieuxuan@ecei.tohoku.ac.jp or pxhieu@gmail.com
  * 	Graduate School of Information Sciences
@@ -32,13 +32,13 @@ using namespace std;
 int dataset::write_wordmap(string wordmapfile, mapword2id * pword2id) {
     FILE * fout = fopen(wordmapfile.c_str(), "w");
     if (!fout) {
-	printf("Cannot open file %s to write!\n", wordmapfile.c_str());
-	return 1;
-    }    
+        printf("Cannot open file %s to write!\n", wordmapfile.c_str());
+        return 1;
+    }
     
     fprintf(fout, "%d\n", (int)pword2id->size());
     for (mapword2id::iterator it = pword2id->begin(); it != pword2id->end(); it++) {
-	fprintf(fout, "%s %d\n", (it->first).c_str(), it->second);
+        fprintf(fout, "%s %d\n", (it->first).c_str(), it->second);
     }
     
     fclose(fout);
@@ -54,7 +54,7 @@ int dataset::read_wordmap(string wordmapfile, mapword2id * pword2id) {
     if (!fin) {
 		printf("Cannot open file %s to read!\n", wordmapfile.c_str());
 		return 1;
-    }    
+    }
     
     char buff[BUFF_SIZE_SHORT];
     string line;
@@ -69,8 +69,9 @@ int dataset::read_wordmap(string wordmapfile, mapword2id * pword2id) {
 		if (strtok.count_tokens() != 2) {
 	    	continue;
 		}
-	
+        
 		pword2id->insert(pair<string, int>(strtok.token(0), atoi(strtok.token(1).c_str())));
+    	strtok.clear();
     }
     
     fclose(fin);
@@ -83,9 +84,9 @@ int dataset::read_wordmap(string wordmapfile, mapid2word * pid2word) {
     strtokenizer strtok;
     FILE * fin = fopen(wordmapfile.c_str(), "r");
     if (!fin) {
-	printf("Cannot open file %s to read!\n", wordmapfile.c_str());
-	return 1;
-    }    
+        printf("Cannot open file %s to read!\n", wordmapfile.c_str());
+        return 1;
+    }
     
     char buff[BUFF_SIZE_SHORT];
     string line;
@@ -94,15 +95,16 @@ int dataset::read_wordmap(string wordmapfile, mapid2word * pid2word) {
     int nwords = atoi(buff);
     
     for (int i = 0; i < nwords; i++) {
-	fgets(buff, BUFF_SIZE_SHORT - 1, fin);
-	line = buff;
-	
-	strtok.strtokenizer_operate(line, " \t\r\n", false);
-	if (strtok.count_tokens() != 2) {
-	    continue;
-	}
-	
-	pid2word->insert(pair<int, string>(atoi(strtok.token(1).c_str()), strtok.token(0)));
+        fgets(buff, BUFF_SIZE_SHORT - 1, fin);
+        line = buff;
+        
+        strtok.strtokenizer_operate(line, " \t\r\n", false);
+        if (strtok.count_tokens() != 2) {
+            continue;
+        }
+        
+        pid2word->insert(pair<int, string>(atoi(strtok.token(1).c_str()), strtok.token(0)));
+    	strtok.clear();
     }
     
     fclose(fin);
@@ -117,9 +119,9 @@ int dataset::read_trndata(string dfile, string wordmapfile) {
     if (!fin) {
 		printf("Cannot open file %s to read!\n", dfile.c_str());
 		return 1;
-    }   
+    }
     
-    mapword2id::iterator it;    
+    mapword2id::iterator it;
     char buff[BUFF_SIZE_LONG];
     string line;
     
@@ -146,30 +148,31 @@ int dataset::read_trndata(string dfile, string wordmapfile) {
 		line = buff;
 		strtok.strtokenizer_operate(line, " \t\r\n", false);
 		int length = strtok.count_tokens();
-
+        
 		if (length <= 0) {
 	    	printf("Invalid (empty) document!\n");
 	    	deallocate();
 	    	M = V = 0;
 	    	return 1;
 		}
-	
+        
 		// allocate new document
 		document * pdoc = new document(length);
-	
+        
 		for (int j = 0; j < length; j++) {
 	    	it = word2id.find(strtok.token(j));
 	    	if (it == word2id.end()) {
-			// word not found, i.e., new word
-			pdoc->words[j] = word2id.size();
-			word2id.insert(pair<string, int>(strtok.token(j), word2id.size()));
+                // word not found, i.e., new word
+                pdoc->words[j] = word2id.size();
+                word2id.insert(pair<string, int>(strtok.token(j), word2id.size()));
 	    	} else {
 				pdoc->words[j] = it->second;
 	    	}
 		}
-	
+        
 		// add new doc to the corpus
 		add_doc(pdoc, i);
+		strtok.clear();
     }
     
     fclose(fin);
@@ -194,13 +197,13 @@ int dataset::read_newdata(string dfile, string wordmapfile) {
 		printf("No word map available!\n");
 		return 1;
     }
-
+    
     FILE * fin = fopen(dfile.c_str(), "r");
     if (!fin) {
 		printf("Cannot open file %s to read!\n", dfile.c_str());
 		return 1;
-    }   
-
+    }
+    
     mapword2id::iterator it;
     map<int, int>::iterator _it;
     char buff[BUFF_SIZE_LONG];
@@ -230,14 +233,14 @@ int dataset::read_newdata(string dfile, string wordmapfile) {
 		line = buff;
 		strtok.strtokenizer_operate(line, " \t\r\n",false);
 		int length = strtok.count_tokens();
-	
+        
 		vector<int> doc;
 		vector<int> _doc;
 		for (int j = 0; j < length; j++) {
 	    	it = word2id.find(strtok.token(j));
 	    	if (it == word2id.end()) {
-			// word not found, i.e., word unseen in training data
-			// do anything? (future decision)
+                // word not found, i.e., word unseen in training data
+                // do anything? (future decision)
 	    	} else {
 				int _id;
 				_it = id2_id.find(it->second);
@@ -248,19 +251,20 @@ int dataset::read_newdata(string dfile, string wordmapfile) {
 				} else {
 		    		_id = _it->second;
 				}
-		
+                
 				doc.push_back(it->second);
 				_doc.push_back(_id);
 	    	}
 		}
-	
+        
 		// allocate memory for new doc
 		document * pdoc = new document(doc);
 		document * _pdoc = new document(_doc);
-	
+        
 		// add new doc
 		add_doc(pdoc, i);
 		_add_doc(_pdoc, i);
+		strtok.clear();
     }
     
     fclose(fin);
@@ -280,13 +284,13 @@ int dataset::read_newdata_withrawstrs(string dfile, string wordmapfile) {
 		printf("No word map available!\n");
 		return 1;
     }
-
+    
     FILE * fin = fopen(dfile.c_str(), "r");
     if (!fin) {
 		printf("Cannot open file %s to read!\n", dfile.c_str());
 		return 1;
-    }   
-
+    }
+    
     mapword2id::iterator it;
     map<int, int>::iterator _it;
     char buff[BUFF_SIZE_LONG];
@@ -316,14 +320,14 @@ int dataset::read_newdata_withrawstrs(string dfile, string wordmapfile) {
 		line = buff;
 		strtok.strtokenizer_operate(line, " \t\r\n", false);
 		int length = strtok.count_tokens();
-	
+        
 		vector<int> doc;
 		vector<int> _doc;
 		for (int j = 0; j < length - 1; j++) {
 	    	it = word2id.find(strtok.token(j));
 	    	if (it == word2id.end()) {
-			// word not found, i.e., word unseen in training data
-			// do anything? (future decision)
+                // word not found, i.e., word unseen in training data
+                // do anything? (future decision)
 	    	} else {
 				int _id;
 				_it = id2_id.find(it->second);
@@ -334,19 +338,20 @@ int dataset::read_newdata_withrawstrs(string dfile, string wordmapfile) {
 				} else {
 		    		_id = _it->second;
 				}
-		
+                
 				doc.push_back(it->second);
 				_doc.push_back(_id);
 	    	}
 		}
-	
+        
 		// allocate memory for new doc
 		document * pdoc = new document(doc, line);
 		document * _pdoc = new document(_doc, line);
-	
+        
 		// add new doc
 		add_doc(pdoc, i);
 		_add_doc(_pdoc, i);
+		strtok.clear();
     }
     
     fclose(fin);

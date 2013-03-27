@@ -22,6 +22,10 @@
  */
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
 #include <fstream>
 #include <string>
 #include <map>
@@ -32,12 +36,62 @@
 
 using namespace std;
 
+void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
+    ifstream fin;
+    string str;
+    fin.open(ofile.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+        printf("Cannot open file %s to read!\n", ofile.c_str());
+        return;
+    }  
+    while (fin >> str) {
+        strtok.strtokenizer_operate(str, "", true);
+    }
+    for (vector<string>::size_type i = 0; i < strtok.count_tokens(); i++) {
+        fout << strtok.token(i) << " ";
+    }
+    fout << endl;
+}
+
+void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, int& size) {
+    string filepath;
+    struct stat info;
+    DIR *dir;
+    stat(name.c_str(), &info);
+    cout << name << endl;
+    if ((info.st_mode & S_IFDIR) == S_IFDIR)
+    {
+        dir = opendir(name.c_str());
+        struct dirent *dirEntry;
+        if (dir == NULL)
+        {
+            cout << "error directory name!" << endl;
+            return;
+        }
+        while ((dirEntry = readdir(dir))) {
+            filepath.assign(dirEntry->d_name);
+            if(filepath.at(0) == '.') {
+                continue;
+            }
+            filepath = name + '/' + filepath;
+            addfile(filepath, fout, strtok, size);
+        }
+        closedir(dir);
+    } else if ((info.st_mode & S_IFREG) == S_IFREG) {
+        readfile(name, fout, strtok);
+        size++;
+    } else {
+        cout << "Invalid type of file: " << name << endl;
+    }
+    return;
+}
+
 int utils::parse_args(int argc, char ** argv, model * pmodel) {
     int model_status = MODEL_STATUS_UNKNOWN;
     string dir = "";
     string model_name = "";
     string dfile = "";
-    string originFile = "";
+    string originDir = "";
 
     double alpha = -1.0;
     double beta = -1.0;
@@ -46,6 +100,7 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     int savestep = 0;
     int twords = 0;
     int withrawdata = 0;
+    int file_type = 0;
     
     int i = 0;
     while (i < argc) {
@@ -91,7 +146,8 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
 	    	withrawdata = 1;
             
 		} else if (arg == "-pprocess") {
-			originFile = argv[++i];
+			originDir = argv[++i];
+            file_type = atoi(argv[++i]);
 			model_status = MODEL_STATUS_PREPROCESS;
 
 		} else {
@@ -235,23 +291,24 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     }
 
     if (model_status == MODEL_STATUS_PREPROCESS) {
-    	if (originFile == "") {
+    	if (originDir == "") {
     		printf("Please specify the input data file for text preprocess!\n");
 	    	return 1;
     	}
 
     	pmodel->model_status = model_status;
-    	pmodel->originFile = originFile;
+    	pmodel->originDir = originDir;
+        pmodel->file_type = file_type;
 
-    	string::size_type idx = originFile.find_last_of("/");
-        if (idx == string::npos) {
-            pmodel->dir = "./";
-        } else {
-            pmodel->dir = originFile.substr(0, idx + 1);
-            pmodel->originFile = originFile.substr(idx + 1, originFile.size() - pmodel->dir.size());
-            printf("dir = %s\n", pmodel->dir.c_str());
-            printf("originFile = %s\n", pmodel->originFile.c_str());
-        }
+    	// string::size_type idx = dfile.find_last_of("/");
+     //    if (idx == string::npos) {
+     //        pmodel->dir = "./";
+     //    } else {
+     //        pmodel->dir = dfile.substr(0, idx + 1);
+     //        pmodel->dfile = dfile.substr(idx + 1, dfile.size() - pmodel->dir.size());
+     //        printf("dir = %s\n", pmodel->dir.c_str());
+     //        printf("dFile = %s\n", pmodel->dfile.c_str());
+     //    }
     }
     
     if (model_status == MODEL_STATUS_UNKNOWN) {
@@ -315,6 +372,7 @@ int utils::read_and_parse(string filename, model * pmodel) {
         } else {
             // any more?
         }
+        strtok.clear();
     }
     
     fclose(fin);

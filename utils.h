@@ -45,6 +45,10 @@ public:
     // sort    
     static void sort(vector<double> & probs, vector<int> & words);
     static void quicksort(vector<pair<int, double> > & vect, int left, int right);
+
+    static void readfile(string ofile, ofstream& fout, strtokenizer& strtok);
+
+    static void addfile(string name, ofstream& fout, strtokenizer& strtok, int& size);
 };
 
 #endif

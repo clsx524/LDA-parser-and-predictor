@@ -56,8 +56,9 @@ public:
     string dir;			// model directory
     string dfile;		// data file    
     string model_name;		// model name
-    string originFile;
+    string originDir;
 
+    int file_type;
     int model_status;		// model status:
 				// MODEL_STATUS_UNKNOWN: unknown status
 				// MODEL_STATUS_EST: estimating from scratch
