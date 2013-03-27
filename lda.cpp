@@ -13,12 +13,10 @@ int main(int argc, char ** argv) {
     }
 
     if (lda.model_status == MODEL_STATUS_EST || lda.model_status == MODEL_STATUS_ESTC) {
-        // parameter estimation
         lda.estimate();
     }
     
     if (lda.model_status == MODEL_STATUS_INF) {
-        // do inference
         lda.inference();
     }
 
@@ -34,11 +32,12 @@ int main(int argc, char ** argv) {
 }
 
 void show_help() {
-    printf("Command line usage:\n");
-    printf("\tlda -pprocess <string> <int>\n");
-    printf("\tlda -est -alpha <double> -beta <double> -ntopics <int> -niters <int> -savestep <int> -twords <int> -dfile <string>\n");
-    printf("\tlda -estc -dir <string> -model <string> -niters <int> -savestep <int> -twords <int>\n");
-    printf("\tlda -inf -dir <string> -model <string> -niters <int> -twords <int> -dfile <string>\n");
+    cout << "Command line usage:" << endl;
+    cout << '\t' << "lda -pprocess <string> <int>" << endl;
+    cout << '\t' << "lda -est -alpha <double> -beta <double> -ntopics <int> -niters <int> -savestep <int> -twords <int> -dfile <string>" << endl;
+    cout << '\t' << "lda -estc -dir <string> -model <string> -niters <int> -savestep <int> -twords <int>" << endl;
+    cout << '\t' << "lda -inf -dir <string> -model <string> -niters <int> -twords <int> -dfile <string>" << endl;
+    cout << '\t' << "lda -ranking <int> -disp <int> -dir <string> -model <string>" << endl;
     // printf("\tlda -inf -dir <string> -model <string> -niters <int> -twords <int> -dfile <string> -withrawdata\n");
 }
 

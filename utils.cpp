@@ -11,7 +11,7 @@
 #include "strtokenizer.h"
 #include "utils.h"
 #include "model.h"
-
+#define NUM 10000
 using namespace std;
 
 void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
@@ -25,7 +25,13 @@ void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
     while (fin >> str) {
         strtok.strtokenizer_operate(str, "", true);
     }
-    for (vector<string>::size_type i = 0; i < strtok.count_tokens(); i++) {
+    int n;
+    if (strtok.count_tokens() < NUM) {
+        n = strtok.count_tokens();
+    } else {
+        n = NUM;
+    }
+    for (vector<string>::size_type i = 0; i < n; i++) {
         fout << strtok.token(i) << " ";
     }
     fout << endl;
@@ -36,7 +42,7 @@ void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, int& size
     struct stat info;
     DIR *dir;
     stat(name.c_str(), &info);
-    cout << name << endl;
+
     if ((info.st_mode & S_IFDIR) == S_IFDIR)
     {
         dir = opendir(name.c_str());
@@ -56,6 +62,7 @@ void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, int& size
         }
         closedir(dir);
     } else if ((info.st_mode & S_IFREG) == S_IFREG) {
+        cout << size << "   " << name << endl;
         readfile(name, fout, strtok);
         size++;
     } else {
@@ -330,18 +337,21 @@ int utils::read_and_parse(string filename, model * pmodel) {
     // nwords=?
     // citer=? // current iteration (when the model was saved)
     
-    FILE * fin = fopen(filename.c_str(), "r");
-    if (!fin) {
-        printf("Cannot open file: %s\n", filename.c_str());
-        return 1;
+    ifstream fin;
+    fin.open(filename.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+        cout << "Can't open file " << filename << endl;
+        return 1; 
     }
     
-    char buff[BUFF_SIZE_SHORT];
     string line;
     strtokenizer strtok;
 
-    while (fgets(buff, BUFF_SIZE_SHORT - 1, fin)) {
-        line = buff;
+    while (1) {
+        getline(fin, line);
+        if (fin.eof()) {
+            break;
+        }
         strtok.strtokenizer_operate(line, "= \t\r\n", false);
         
         string optstr = strtok.token(0);
@@ -372,6 +382,8 @@ int utils::read_and_parse(string filename, model * pmodel) {
                 pmodel->nwsum[i] = stoi(strtok.token(i+1));
             }
         } else if (optstr == "ndsum") {
+            // cout << strtok.count_tokens() << endl;
+            // strtok.print();
             assert((int)strtok.count_tokens() == pmodel->M+1);
             pmodel->ndsum = new int[pmodel->M];
             for (int i = 0; i < pmodel->M; ++i) {
@@ -383,7 +395,7 @@ int utils::read_and_parse(string filename, model * pmodel) {
         strtok.clear();
     }
     
-    fclose(fin);
+    fin.close();
     
     return 0;
 }
