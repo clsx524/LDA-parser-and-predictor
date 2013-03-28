@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void strtokenizer::strtokenizer_operate(string str, string seperators, bool preEnable) {
+void strtokenizer::split(string str, string seperators, bool preEnable) {
     z = NULL;
     if (preEnable == true) {
         preprocess(str);
@@ -19,13 +19,13 @@ void strtokenizer::preprocess(string text) {
     //text = regex_replace(text, re1, "\\1 \\2");
     //text = regex_replace(text, re2, "\\1 \\2");
     //text = regex_replace(text, re3, " ");
-    if (text.size() > 2)
-    {
+    if (text.size() > 3) {
         text = stem(text);
+    } else {
+        return;
     }
     text = stopword_remover(text);
-    if (text != "")
-    {
+    if (text != "") {
         tokens.push_back(text);
     }
     
@@ -45,7 +45,6 @@ void strtokenizer::parse(string str, string seperators) {
         tokens.push_back(str.substr(start, stop - start));
         start = str.find_first_not_of(seperators, stop + 1);
     }
-    start_scan(); // set idx = 0
 }
 
 void strtokenizer::read_stop_list() {
@@ -104,18 +103,6 @@ vector<string>::size_type strtokenizer::count_tokens() {
     return tokens.size();
 }
 
-void strtokenizer::start_scan() {
-    idx = 0;
-}
-
-string strtokenizer::next_token() {
-    if (idx >= 0 && idx < (int)tokens.size()) {
-        return tokens[idx++];
-    } else {
-        return "";
-    }
-}
-
 string strtokenizer::token(int i) {
     if (i >= 0 && i < (int)tokens.size()) {
         return tokens[i];
@@ -126,7 +113,6 @@ string strtokenizer::token(int i) {
 
 void strtokenizer::clear() {
     tokens.clear();
-    idx = 0;
 }
 
 void strtokenizer::print() {
@@ -134,6 +120,28 @@ void strtokenizer::print() {
         cout << tokens[i] << endl;
     }
 }
+
+/* In stem(b, k), b is a char pointer, and the string to be stemmed is
+ from b[0] to b[k] inclusive.  Possibly b[k+1] == '\0', but it is not
+ important. The stemmer adjusts the characters b[0] ... b[k] and returns
+ the new end-point of the string, k'. Stemming never increases word
+ length, so 0 <= k' <= k.
+ */
+
+string strtokenizer::stem(string b) {
+    string str;
+    if (z == NULL)
+    {
+        z = new stemmer(b);
+    } else {
+        z->str = b;
+    }
+
+    step1ab(); step1c(); step2(); step3(); step4(); step5();
+    //str.copy(z->str,z->k);
+    return z->str;
+}
+
 /* cons(i) is true <=> b[i] is a consonant. ('b' means 'z->str', but here
  and below we drop 'z->' in comments.
  */
@@ -425,26 +433,5 @@ void strtokenizer::step5() {
         if (a > 1 || (a == 1 && !cvc((z->str).size()-2))) (z->str).erase((z->str).size()-1,1);
     }
     if ((z->str)[(z->str).size()-1] == 'l' && doublec((z->str).size()-1) && m() > 1) (z->str).erase((z->str).size()-1,1);
-}
-
-/* In stem(b, k), b is a char pointer, and the string to be stemmed is
- from b[0] to b[k] inclusive.  Possibly b[k+1] == '\0', but it is not
- important. The stemmer adjusts the characters b[0] ... b[k] and returns
- the new end-point of the string, k'. Stemming never increases word
- length, so 0 <= k' <= k.
- */
-
-string strtokenizer::stem(string b) {
-    string str;
-    if (z == NULL)
-    {
-        z = new stemmer(b);
-    } else {
-        z->str = b;
-    }
-
-    step1ab(); step1c(); step2(); step3(); step4(); step5();
-    //str.copy(z->str,z->k);
-    return z->str;
 }
 

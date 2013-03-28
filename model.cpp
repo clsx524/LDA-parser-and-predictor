@@ -206,13 +206,13 @@ int model::load_model(string model_name) {
     string::size_type i, j;
     strtokenizer strtok, tok;
     string filename = dir + model_name + tassign_suffix;
-    FILE * fin = fopen(filename.c_str(), "r");
-    if (!fin) {
-        printf("Cannot open file %s to load model!\n", filename.c_str());
+    ifstream fin;
+    fin.open(filename.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+        cout << "Cannot open file " << filename << " to load model!" << endl;
         return 1;
     }
     
-    char buff[BUFF_SIZE_LONG];
     string line;
     
     // allocate memory for z and ptrndata
@@ -221,14 +221,13 @@ int model::load_model(string model_name) {
     ptrndata->V = V;
     
     for (i = 0; i < (string::size_type)M; i++) {
-	    char * pointer = fgets(buff, BUFF_SIZE_LONG, fin);
-	    if (!pointer) {
-	        printf("Invalid word-topic assignment file, check the number of docs!\n");
+	    getline(fin, line);
+	    if (line == "") {
+	        cout << "Invalid word-topic assignment file, check the number of docs!" << endl;
 	        return 1;
 	    }
         
-	    line = buff;
-	    strtok.strtokenizer_operate(line, " \t\r\n", false);
+	    strtok.split(line, " \t\r\n", false);
 	    int length = strtok.count_tokens();
         
         vector<int> words;
@@ -236,10 +235,10 @@ int model::load_model(string model_name) {
         for (j = 0; j < (string::size_type)length; j++) {
             string token = strtok.token(j);
 
-            tok.strtokenizer_operate(token, ":", false);
+            tok.split(token, ":", false);
 
             if (tok.count_tokens() != 2) {
-                printf("Invalid word-topic assignment line!\n");
+                cout << "Invalid word-topic assignment line!" << endl;
                 return 1;
             }
             
@@ -260,7 +259,7 @@ int model::load_model(string model_name) {
         strtok.clear();
     }
     
-    fclose(fin);
+    fin.close();
     
     return 0;
 }
@@ -294,59 +293,62 @@ int model::save_model(string model_name) {
 int model::save_model_tassign(string filename) {
     int i, j;
     
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename << " to save!" << endl;
         return 1;
     }
     
     // wirte docs with topic assignments for words
     for (i = 0; i < ptrndata->M; i++) {
         for (j = 0; j < ptrndata->docs[i]->length; j++) {
-            fprintf(fout, "%d:%d ", ptrndata->docs[i]->words[j], z[i][j]);
+            fout << " " << ptrndata->docs[i]->words[j] << ":" << z[i][j] << " ";
         }
-        fprintf(fout, "\n");
+        fout << endl;
     }
     
-    fclose(fout);
+    fout.close();
     
     return 0;
 }
 
 int model::save_model_theta(string filename) {
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename << " to save!" << endl;
         return 1;
     }
     
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < K; j++) {
-            fprintf(fout, "%f ", theta[i][j]);
+            fout << theta[i][j] << " ";
         }
-        fprintf(fout, "\n");
+        fout << endl;
     }
     
-    fclose(fout);
+    fout.close();
     
     return 0;
 }
 
 int model::save_model_phi(string filename) {
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename << " to save!" << endl;
         return 1;
     }
     
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < V; j++) {
-            fprintf(fout, "%f ", phi[i][j]);
+            fout << phi[i][j] << " ";
         }
-        fprintf(fout, "\n");
+        fout << endl;
     }
     
-    fclose(fout);
+    fout.close();
     
     return 0;
 }
@@ -383,9 +385,10 @@ int model::save_model_others(string filename) {
 }
 
 int model::save_model_twords(string filename) {
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename << " to save!" << endl;
         return 1;
     }
     
@@ -406,16 +409,16 @@ int model::save_model_twords(string filename) {
         // quick sort to sort word-topic probability
         utils::quicksort(words_probs, 0, words_probs.size() - 1);
         
-        fprintf(fout, "Topic %dth:\n", k);
+        fout << "Topic " << k << "th:" << endl;
         for (int i = 0; i < twords; i++) {
             it = id2word.find(words_probs[i].first);
             if (it != id2word.end()) {
-                fprintf(fout, "\t%s   %f\n", (it->second).c_str(), words_probs[i].second);
+                fout << "   " << (it->second).c_str() << "   " << words_probs[i].second << endl;
             }
         }
     }
     
-    fclose(fout);
+    fout.close();
     
     return 0;
 }
@@ -448,62 +451,63 @@ int model::save_inf_model(string model_name) {
 
 int model::save_inf_model_tassign(string filename) {
     int i, j;
-    
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename << " to save!" << endl;
         return 1;
     }
     
     // wirte docs with topic assignments for words
     for (i = 0; i < pnewdata->M; i++) {
         for (j = 0; j < pnewdata->docs[i]->length; j++) {
-            fprintf(fout, "%d:%d ", pnewdata->docs[i]->words[j], newz[i][j]);
+            fout << pnewdata->docs[i]->words[j] << ":" << newz[i][j] << " ";
         }
-        fprintf(fout, "\n");
+        fout << endl;
     }
     
-    fclose(fout);
+    fout.close();
     
     return 0;
 }
 
 int model::save_inf_model_newtheta(string filename) {
     int i, j;
-    
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename << " to save!" << endl;
         return 1;
     }
     
     for (i = 0; i < newM; i++) {
         for (j = 0; j < K; j++) {
-            fprintf(fout, "%f ", newtheta[i][j]);
+            fout << newtheta[i][j] << " ";
         }
-        fprintf(fout, "\n");
+        fout << endl;
     }
     
-    fclose(fout);
+    fout.close();
     
     return 0;
 }
 
 int model::save_inf_model_newphi(string filename) {
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename << " to save!" << endl;
         return 1;
     }
     
     for (int i = 0; i < K; i++) {
         for (int j = 0; j < newV; j++) {
-            fprintf(fout, "%f ", newphi[i][j]);
+            fout << newphi[i][j] << " ";
         }
-        fprintf(fout, "\n");
+        fout << endl;
     }
     
-    fclose(fout);
+    fout.close();
     
     return 0;
 }
@@ -540,9 +544,10 @@ int model::save_inf_model_others(string filename) {
 }
 
 int model::save_inf_model_twords(string filename) {
-    FILE * fout = fopen(filename.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to save!\n", filename.c_str());
+    ofstream fout;
+    fout.open(filename.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " << filename << " to save!" << endl;
         return 1;
     }
     
@@ -564,7 +569,7 @@ int model::save_inf_model_twords(string filename) {
         // quick sort to sort word-topic probability
         utils::quicksort(words_probs, 0, words_probs.size() - 1);
         
-        fprintf(fout, "Topic %dth:\n", k);
+        fout << "Topic " << " " << k << "th:" << endl;
         for (int i = 0; i < twords; i++) {
             _it = pnewdata->_id2id.find(words_probs[i].first);
             if (_it == pnewdata->_id2id.end()) {
@@ -572,12 +577,12 @@ int model::save_inf_model_twords(string filename) {
             }
             it = id2word.find(_it->second);
             if (it != id2word.end()) {
-                fprintf(fout, "\t%s   %f\n", (it->second).c_str(), words_probs[i].second);
+                fout << "   " << (it->second).c_str() << "  " << words_probs[i].second << endl;
             }
         }
     }
     
-    fclose(fout);
+    fout.close();
     
     return 0;
 }
@@ -591,7 +596,7 @@ int model::init_est() {
     // + read training data
     ptrndata = new dataset;
     if (ptrndata->read_trndata(dir + dfile, dir + wordmapfile)) {
-        printf("Fail to read training data!\n");
+        cout << "Fail to read training data!" << endl;
         return 1;
     }
     
@@ -672,7 +677,7 @@ int model::init_estc() {
     
     // load moel, i.e., read z and ptrndata
     if (load_model(model_name)) {
-        printf("Fail to load word-topic assignment file of the model!\n");
+        cout << "Fail to load word-topic assignment file of the model!" << endl;
         return 1;
     }
     
@@ -737,7 +742,7 @@ int model::init_estc() {
 void model::preprocess() {
     ofstream fout;
     string output;
-    int size = 0;
+    int size = 1000;
     if (file_type == 1) {
         output = "model/trndata.txt";
     } else if (file_type == 2){
@@ -748,6 +753,8 @@ void model::preprocess() {
     
     fout.open(output.c_str(), ofstream::ate);
     strtokenizer strtok;
+    fout << size;
+    size = 0;
     utils::addfile(originDir, fout, strtok, size);
     fout.seekp(0);
     fout << size << endl;
@@ -761,11 +768,11 @@ void model::estimate() {
         dataset::read_wordmap(dir + wordmapfile, &id2word);
     }
     
-    printf("Sampling %d iterations!\n", niters);
+    cout << "Sampling " << niters << " iterations!" << endl;
     
     int last_iter = liter;
     for (liter = last_iter + 1; liter <= niters + last_iter; liter++) {
-        printf("Iteration %d ...\n", liter);
+        cout << "Iteration " << liter << " ..." << endl;
         
 	    // for all z_i
 	    for (int m = 0; m < M; m++) {
@@ -780,7 +787,7 @@ void model::estimate() {
 	    if (savestep > 0) {
 	        if (liter % savestep == 0) {
                 // saving the model
-                printf("Saving the model at iteration %d ...\n", liter);
+                cout << "Saving the model at iteration " << liter << " ..." << endl;
                 compute_theta();
                 compute_phi();
                 save_model(utils::generate_model_name(liter));
@@ -788,8 +795,8 @@ void model::estimate() {
 	    }
     }
     
-    printf("Gibbs sampling completed!\n");
-    printf("Saving the final model!\n");
+    cout << "Gibbs sampling completed!" << endl;
+    cout << "Saving the final model!" << endl;
     compute_theta();
     compute_phi();
     liter--;
@@ -858,7 +865,7 @@ int model::init_inf() {
     
     // load moel, i.e., read z and ptrndata
     if (load_model(model_name)) {
-        printf("Fail to load word-topic assignment file of the model!\n");
+        cout << "Fail to load word-topic assignment file of the model!" << endl;
         return 1;
     }
     
@@ -911,12 +918,12 @@ int model::init_inf() {
     pnewdata = new dataset;
     if (withrawstrs) {
         if (pnewdata->read_newdata_withrawstrs(dir + dfile, dir + wordmapfile)) {
-    	    printf("Fail to read new data!\n");
+    	    cout << "Fail to read new data!" << endl;
     	    return 1;
         }
     } else {
         if (pnewdata->read_newdata(dir + dfile, dir + wordmapfile)) {
-    	    printf("Fail to read new data!\n");
+    	    cout << "Fail to read new data!" << endl;
     	    return 1;
         }
     }
@@ -993,10 +1000,10 @@ void model::inference() {
         dataset::read_wordmap(dir + wordmapfile, &id2word);
     }
     
-    printf("Sampling %d iterations for inference!\n", niters);
+    cout << "Sampling " << niters << " iterations for inference!" << endl;
     
     for (inf_liter = 1; inf_liter <= niters; inf_liter++) {
-        printf("Iteration %d ...\n", inf_liter);
+        cout << "Iteration " << inf_liter << " ..." << endl;
         
         // for all newz_i
         for (int m = 0; m < newM; m++) {
@@ -1009,8 +1016,8 @@ void model::inference() {
         }
     }
     
-    printf("Gibbs sampling for inference completed!\n");
-    printf("Saving the inference outputs!\n");
+    cout << "Gibbs sampling for inference completed!" << endl;
+    cout << "Saving the inference outputs!" << endl;
     compute_newtheta();
     compute_newphi();
     inf_liter--;
@@ -1078,7 +1085,7 @@ void model::compute_newphi() {
 
 int model::init_ranking() {
     if (load_model(model_name)) {
-        printf("Fail to load word-topic assignment file of the model!\n");
+        cout << "Fail to load word-topic assignment file of the model!" << endl;
         return 1;
     }
     ifstream in;
@@ -1095,7 +1102,7 @@ int model::init_ranking() {
         if (in.eof()) {
             break;
         }
-        strtok.strtokenizer_operate(str, " \t\r\n", false);
+        strtok.split(str, " \t\r\n", false);
         assert(strtok.count_tokens() == K);
         theta[i] = new double[K];
         for (int j = 0; j < K; ++j) {

@@ -7,19 +7,19 @@ using namespace std;
 // write the mapword2id into a file
 // input : filename and mapword2id
 int dataset::write_wordmap(string wordmapfile, mapword2id * pword2id) {
-    FILE * fout = fopen(wordmapfile.c_str(), "w");
-    if (!fout) {
-        printf("Cannot open file %s to write!\n", wordmapfile.c_str());
+    ofstream fout;
+    fout.open(wordmapfile.c_str(), ofstream::out);
+    if (!fout.is_open()) {
+        cout << "Cannot open file " <<  wordmapfile << " to write!" << endl;
         return 1;
     }
     
-    fprintf(fout, "%d\n", (int)pword2id->size());
+    fout << pword2id->size() << endl;
     for (mapword2id::iterator it = pword2id->begin(); it != pword2id->end(); it++) {
-        fprintf(fout, "%s %d\n", (it->first).c_str(), it->second);
+        fout << it->first << " " << it->second << endl;
     }
     
-    fclose(fout);
-    
+    fout.close();
     return 0;
 }
 
@@ -27,86 +27,81 @@ int dataset::write_wordmap(string wordmapfile, mapword2id * pword2id) {
 int dataset::read_wordmap(string wordmapfile, mapword2id * pword2id) {
     pword2id->clear();
     strtokenizer strtok;
-    FILE * fin = fopen(wordmapfile.c_str(), "r");
-    if (!fin) {
-		printf("Cannot open file %s to read!\n", wordmapfile.c_str());
+    ifstream fin;
+    fin.open(wordmapfile.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+		cout << "Cannot open file " <<  wordmapfile << " to read!" << endl;
 		return 1;
     }
     
-    char buff[BUFF_SIZE_SHORT];
     string line;
     
-    fgets(buff, BUFF_SIZE_SHORT - 1, fin);
-    int nwords = atoi(buff);
+    getline(fin, line);
+    long nwords = stol(line);
     
-    for (int i = 0; i < nwords; i++) {
-		fgets(buff, BUFF_SIZE_SHORT - 1, fin);
-		line = buff;
-		strtok.strtokenizer_operate(line, " \t\r\n", false);
+    for (long i = 0; i < nwords; i++) {
+		getline(fin, line);
+		strtok.split(line, " \t\r\n", false);
 		if (strtok.count_tokens() != 2) {
 	    	continue;
 		}
         
-		pword2id->insert(pair<string, int>(strtok.token(0), atoi(strtok.token(1).c_str())));
+		pword2id->insert(pair<string, int>(strtok.token(0), stoi(strtok.token(1))));
     	strtok.clear();
     }
     
-    fclose(fin);
-    
+    fin.close();
     return 0;
 }
 
 int dataset::read_wordmap(string wordmapfile, mapid2word * pid2word) {
     pid2word->clear();
     strtokenizer strtok;
-    FILE * fin = fopen(wordmapfile.c_str(), "r");
-    if (!fin) {
-        printf("Cannot open file %s to read!\n", wordmapfile.c_str());
+    ifstream fin; 
+    fin.open(wordmapfile.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+        cout << "Cannot open file " <<  wordmapfile << " to read!" << endl;
         return 1;
     }
     
-    char buff[BUFF_SIZE_SHORT];
     string line;
     
-    fgets(buff, BUFF_SIZE_SHORT - 1, fin);
-    int nwords = atoi(buff);
-    
-    for (int i = 0; i < nwords; i++) {
-        fgets(buff, BUFF_SIZE_SHORT - 1, fin);
-        line = buff;
-        
-        strtok.strtokenizer_operate(line, " \t\r\n", false);
+    getline(fin, line);
+    long nwords = stol(line);
+
+    for (long i = 0; i < nwords; i++) {
+        getline(fin, line);
+        strtok.split(line, " \t\r\n", false);
         if (strtok.count_tokens() != 2) {
             continue;
         }
         
-        pid2word->insert(pair<int, string>(atoi(strtok.token(1).c_str()), strtok.token(0)));
+        pid2word->insert(pair<int, string>(stol(strtok.token(1)), strtok.token(0)));
     	strtok.clear();
     }
     
-    fclose(fin);
-    
+    fin.close();
     return 0;
 }
 
 int dataset::read_trndata(string dfile, string wordmapfile) {
     mapword2id word2id;
     
-    FILE * fin = fopen(dfile.c_str(), "r");
-    if (!fin) {
-		printf("Cannot open file %s to read!\n", dfile.c_str());
+    ifstream fin;
+    fin.open(dfile.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+		cout << "Cannot open file " <<  dfile << " to read!" << endl;
 		return 1;
     }
     
     mapword2id::iterator it;
-    char buff[BUFF_SIZE_LONG];
     string line;
     
     // get the number of documents
-    fgets(buff, BUFF_SIZE_LONG - 1, fin);
-    M = atoi(buff);
+    getline(fin, line);
+    M = stoi(line);
     if (M <= 0) {
-		printf("No document available!\n");
+		cout << "No document available!" << endl;
 		return 1;
     }
     
@@ -121,13 +116,13 @@ int dataset::read_trndata(string dfile, string wordmapfile) {
     V = 0;
     strtokenizer strtok;
     for (int i = 0; i < M; i++) {
-		fgets(buff, BUFF_SIZE_LONG - 1, fin);
-		line = buff;
-		strtok.strtokenizer_operate(line, " \t\r\n", false);
+		getline(fin, line);
+        cout << i << endl;
+		strtok.split(line, " \t\r\n", false);
 		int length = strtok.count_tokens();
         
 		if (length <= 0) {
-	    	printf("Invalid (empty) document!\n");
+	    	cout << "Invalid (empty) document!" << endl;
 	    	deallocate();
 	    	M = V = 0;
 	    	return 1;
@@ -152,7 +147,7 @@ int dataset::read_trndata(string dfile, string wordmapfile) {
 		strtok.clear();
     }
     
-    fclose(fin);
+    fin.close();
     
     // write word map to file
     if (write_wordmap(wordmapfile, &word2id)) {
@@ -171,26 +166,26 @@ int dataset::read_newdata(string dfile, string wordmapfile) {
     
     read_wordmap(wordmapfile, &word2id);
     if (word2id.size() <= 0) {
-		printf("No word map available!\n");
+		cout << "No word map available!" << endl;
 		return 1;
     }
     
-    FILE * fin = fopen(dfile.c_str(), "r");
-    if (!fin) {
-		printf("Cannot open file %s to read!\n", dfile.c_str());
+    ifstream fin;
+    fin.open(dfile.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+		cout << "Cannot open file " <<  dfile << " to read!" << endl;
 		return 1;
     }
     
     mapword2id::iterator it;
     map<int, int>::iterator _it;
-    char buff[BUFF_SIZE_LONG];
     string line;
     
     // get number of new documents
-    fgets(buff, BUFF_SIZE_LONG - 1, fin);
-    M = atoi(buff);
+    getline(fin, line);
+    M = stoi(line);
     if (M <= 0) {
-		printf("No document available!\n");
+		cout << "No document available!" << endl;
 		return 1;
     }
     
@@ -206,9 +201,8 @@ int dataset::read_newdata(string dfile, string wordmapfile) {
     V = 0;
     strtokenizer strtok;
     for (int i = 0; i < M; i++) {
-		fgets(buff, BUFF_SIZE_LONG - 1, fin);
-		line = buff;
-		strtok.strtokenizer_operate(line, " \t\r\n",false);
+		getline(fin, line);
+		strtok.split(line, " \t\r\n",false);
 		int length = strtok.count_tokens();
         
 		vector<int> doc;
@@ -244,7 +238,7 @@ int dataset::read_newdata(string dfile, string wordmapfile) {
 		strtok.clear();
     }
     
-    fclose(fin);
+    fin.close();
     
     // update number of new words
     V = id2_id.size();
@@ -258,26 +252,26 @@ int dataset::read_newdata_withrawstrs(string dfile, string wordmapfile) {
     
     read_wordmap(wordmapfile, &word2id);
     if (word2id.size() <= 0) {
-		printf("No word map available!\n");
+		cout << "No word map available!" << endl;
 		return 1;
     }
     
-    FILE * fin = fopen(dfile.c_str(), "r");
-    if (!fin) {
-		printf("Cannot open file %s to read!\n", dfile.c_str());
+    ifstream fin;
+    fin.open(dfile.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+		cout << "Cannot open file " <<  dfile << " to read!" << endl;
 		return 1;
     }
     
     mapword2id::iterator it;
     map<int, int>::iterator _it;
-    char buff[BUFF_SIZE_LONG];
     string line;
     
     // get number of new documents
-    fgets(buff, BUFF_SIZE_LONG - 1, fin);
-    M = atoi(buff);
+    getline(fin, line);
+    M = stoi(line);
     if (M <= 0) {
-		printf("No document available!\n");
+		cout << "No document available!" << endl;
 		return 1;
     }
     
@@ -293,9 +287,8 @@ int dataset::read_newdata_withrawstrs(string dfile, string wordmapfile) {
     V = 0;
     strtokenizer strtok;
     for (int i = 0; i < M; i++) {
-		fgets(buff, BUFF_SIZE_LONG - 1, fin);
-		line = buff;
-		strtok.strtokenizer_operate(line, " \t\r\n", false);
+		getline(fin, line);
+		strtok.split(line, " \t\r\n", false);
 		int length = strtok.count_tokens();
         
 		vector<int> doc;
@@ -331,7 +324,7 @@ int dataset::read_newdata_withrawstrs(string dfile, string wordmapfile) {
 		strtok.clear();
     }
     
-    fclose(fin);
+    fin.close();
     
     // update number of new words
     V = id2_id.size();

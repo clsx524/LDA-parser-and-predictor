@@ -11,7 +11,7 @@
 #include "strtokenizer.h"
 #include "utils.h"
 #include "model.h"
-#define NUM 10000
+
 using namespace std;
 
 void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
@@ -19,22 +19,17 @@ void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
     string str;
     fin.open(ofile.c_str(), ifstream::in);
     if (!fin.is_open()) {
-        printf("Cannot open file %s to read!\n", ofile.c_str());
+        cout << "Cannot open file " << ofile << " to read!" << endl;
         return;
     }  
     while (fin >> str) {
-        strtok.strtokenizer_operate(str, "", true);
+        strtok.split(str, " \t\n\r", true);
     }
-    int n;
-    if (strtok.count_tokens() < NUM) {
-        n = strtok.count_tokens();
-    } else {
-        n = NUM;
-    }
-    for (vector<string>::size_type i = 0; i < n; i++) {
+    for (vector<string>::size_type i = 0; i < strtok.count_tokens(); i++) {
         fout << strtok.token(i) << " ";
     }
     fout << endl;
+    strtok.clear();
 }
 
 void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, int& size) {
@@ -153,7 +148,7 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     
     if (model_status == MODEL_STATUS_EST) {
 		if (dfile == "") {
-	    	printf("Please specify the input data file for model estimation!\n");
+	    	cout << "Please specify the input data file for model estimation!" << endl;
 	    	return 1;
 		}
         
@@ -194,19 +189,19 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
         } else {
             pmodel->dir = dfile.substr(0, idx + 1);
             pmodel->dfile = dfile.substr(idx + 1, dfile.size() - pmodel->dir.size());
-            printf("dir = %s\n", pmodel->dir.c_str());
-            printf("dfile = %s\n", pmodel->dfile.c_str());
+            cout << "dir = " << pmodel->dir.c_str() << endl;
+            cout << "dfile =" << pmodel->dfile.c_str() << endl;
         }
     }
     
     if (model_status == MODEL_STATUS_ESTC) {
         if (dir == "") {
-            printf("Please specify model directory!\n");
+            cout << "Please specify model directory!" << endl;
             return 1;
         }
         
         if (model_name == "") {
-            printf("Please specify model name upon that you want to continue estimating!\n");
+            cout << "Please specify model name upon that you want to continue estimating!" << endl;
             return 1;
         }
         
@@ -239,17 +234,17 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     
     if (model_status == MODEL_STATUS_INF) {
         if (dir == "") {
-            printf("Please specify model directory please!\n");
+            cout << "Please specify model directory please!" << endl;
             return 1;
         }
         
         if (model_name == "") {
-            printf("Please specify model name for inference!\n");
+            cout << "Please specify model name for inference!" << endl;
             return 1;
         }
         
         if (dfile == "") {
-            printf("Please specify the new data file for inference!\n");
+            cout << "Please specify the new data file for inference!" << endl;
             return 1;
         }
         
@@ -287,7 +282,7 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
 
     if (model_status == MODEL_STATUS_PREPROCESS) {
     	if (originDir == "") {
-    		printf("Please specify the input data file for text preprocess!\n");
+    		cout << "Please specify the input data file for text preprocess!" << endl;
 	    	return 1;
     	}
 
@@ -302,12 +297,12 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
         pmodel->model_status = model_status;
 
         if (dir == "") {
-            printf("Please specify model directory please!\n");
+            cout << "Please specify model directory please!" << endl;
             return 1;
         }
         
         if (model_name == "") {
-            printf("Please specify model name for inference!\n");
+            cout << "Please specify model name for inference!" << endl;
             return 1;
         }
         if (dir[dir.size() - 1] != '/') {
@@ -321,7 +316,7 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     }
     
     if (model_status == MODEL_STATUS_UNKNOWN) {
-        printf("Please specify the task you would like to perform (-est/-estc/-inf/-preprocess)!\n");
+        cout << "Please specify the task you would like to perform (-est/-estc/-inf/-preprocess)!" << endl;
         return 1;
     }
     
@@ -352,7 +347,7 @@ int utils::read_and_parse(string filename, model * pmodel) {
         if (fin.eof()) {
             break;
         }
-        strtok.strtokenizer_operate(line, "= \t\r\n", false);
+        strtok.split(line, "= \t\r\n", false);
         
         string optstr = strtok.token(0);
         string optval = strtok.token(1);
@@ -382,8 +377,6 @@ int utils::read_and_parse(string filename, model * pmodel) {
                 pmodel->nwsum[i] = stoi(strtok.token(i+1));
             }
         } else if (optstr == "ndsum") {
-            // cout << strtok.count_tokens() << endl;
-            // strtok.print();
             assert((int)strtok.count_tokens() == pmodel->M+1);
             pmodel->ndsum = new int[pmodel->M];
             for (int i = 0; i < pmodel->M; ++i) {
@@ -403,22 +396,22 @@ int utils::read_and_parse(string filename, model * pmodel) {
 string utils::generate_model_name(int iter) {
     string model_name = "model-";
     
-    char buff[BUFF_SIZE_SHORT];
+    string str;
     
     if (0 <= iter && iter < 10) {
-        sprintf(buff, "0000%d", iter);
+        str = "0000" + to_string(iter);
     } else if (10 <= iter && iter < 100) {
-        sprintf(buff, "000%d", iter);
+        str = "000" + to_string(iter);
     } else if (100 <= iter && iter < 1000) {
-        sprintf(buff, "00%d", iter);
+        str = "00" + to_string(iter);
     } else if (1000 <= iter && iter < 10000) {
-        sprintf(buff, "0%d", iter);
+        str = "0" + to_string(iter);
     } else {
-        sprintf(buff, "%d", iter);
+        str = to_string(iter);
     }
     
     if (iter >= 0) {
-        model_name += buff;
+        model_name += str;
     } else {
         model_name += "final";
     }

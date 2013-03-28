@@ -16,7 +16,6 @@ class strtokenizer {
 protected:
     vector<string> tokens;
     vector<string> stopList;
-    int idx;
     bool stopListRead;
 
     class stemmer {
@@ -31,7 +30,7 @@ protected:
 	stemmer* z;
 
 public:
-    strtokenizer() : idx(0), stopListRead(false), z(NULL) {
+    strtokenizer() : stopListRead(false), z(NULL) {
         if (stopListRead == false) {
             read_stop_list();
         }
@@ -40,13 +39,11 @@ public:
         delete z;
     }
 
-    void strtokenizer_operate(string str, string seperators = " ", bool preEnable = false);
+    void split(string str, string seperators = " ", bool preEnable = false);
     void parse(string str, string seperators);
     void preprocess(string text);
     
     vector<string>::size_type count_tokens();
-    string next_token();   
-    void start_scan();
 
     string token(int i);
     void clear();
