@@ -742,7 +742,7 @@ int model::init_estc() {
 void model::preprocess() {
     ofstream fout;
     string output;
-    int size = 1000;
+    int size = 65535;
     if (file_type == 1) {
         output = "model/trndata.txt";
     } else if (file_type == 2){
@@ -1103,10 +1103,10 @@ int model::init_ranking() {
             break;
         }
         strtok.split(str, " \t\r\n", false);
-        assert(strtok.count_tokens() == K);
+        assert((int)strtok.count_tokens() == K);
         theta[i] = new double[K];
         for (int j = 0; j < K; ++j) {
-            theta[i][j] = stod(strtok.token(j));
+            theta[i][j] = utils::stod(strtok.token(j));
         }
         strtok.clear();
         i++;

@@ -3,6 +3,7 @@
 
 #include "constants.h"
 #include "dataset.h"
+#include "utils.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>

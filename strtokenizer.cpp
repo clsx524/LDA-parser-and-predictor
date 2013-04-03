@@ -2,6 +2,10 @@
 
 using namespace std;
 
+void strtokenizer::addToken(const string& str) {
+    tokens.push_back(str);
+}
+
 void strtokenizer::split(string str, string seperators, bool preEnable) {
     z = NULL;
     if (preEnable == true) {
@@ -19,7 +23,7 @@ void strtokenizer::preprocess(string text) {
     //text = regex_replace(text, re1, "\\1 \\2");
     //text = regex_replace(text, re2, "\\1 \\2");
     //text = regex_replace(text, re3, " ");
-    if (text.size() > 3) {
+    if (text.size() > 2) {
         text = stem(text);
     } else {
         return;

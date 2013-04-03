@@ -1,7 +1,18 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
+#include <set>
+#include <boost/regex.hpp>
+#include "strtokenizer.h"
+#include "model.h"
 
 using namespace std;
 
@@ -17,14 +28,18 @@ public:
     
     // generate the model name for the current iteration
     // iter = -1 => final model
-    static string generate_model_name(int iter);  
+    static string generate_model_name(int iter); 
+
+    static double stod(const string& str); 
     
     // sort    
     static void sort(vector<double> & probs, vector<int> & words);
     static void quicksort(vector<pair<int, double> > & vect, int left, int right);
 
     static void readfile(string ofile, ofstream& fout, strtokenizer& strtok);
+    static void readfile(string ofile, strtokenizer& strtok);
 
+    static void addfile(string name, vector<string>& pathset, vector<string>::size_type& size);
     static void addfile(string name, ofstream& fout, strtokenizer& strtok, int& size);
 };
 

@@ -37,7 +37,7 @@ int dataset::read_wordmap(string wordmapfile, mapword2id * pword2id) {
     string line;
     
     getline(fin, line);
-    long nwords = stol(line);
+    int nwords = atoi(line.c_str());
     
     for (long i = 0; i < nwords; i++) {
 		getline(fin, line);
@@ -46,7 +46,7 @@ int dataset::read_wordmap(string wordmapfile, mapword2id * pword2id) {
 	    	continue;
 		}
         
-		pword2id->insert(pair<string, int>(strtok.token(0), stoi(strtok.token(1))));
+		pword2id->insert(pair<string, int>(strtok.token(0), atoi(strtok.token(1).c_str())));
     	strtok.clear();
     }
     
@@ -67,7 +67,7 @@ int dataset::read_wordmap(string wordmapfile, mapid2word * pid2word) {
     string line;
     
     getline(fin, line);
-    long nwords = stol(line);
+    int nwords = atoi(line.c_str());
 
     for (long i = 0; i < nwords; i++) {
         getline(fin, line);
@@ -76,7 +76,7 @@ int dataset::read_wordmap(string wordmapfile, mapid2word * pid2word) {
             continue;
         }
         
-        pid2word->insert(pair<int, string>(stol(strtok.token(1)), strtok.token(0)));
+        pid2word->insert(pair<int, string>(atoi(strtok.token(1).c_str()), strtok.token(0)));
     	strtok.clear();
     }
     
@@ -99,7 +99,8 @@ int dataset::read_trndata(string dfile, string wordmapfile) {
     
     // get the number of documents
     getline(fin, line);
-    M = stoi(line);
+    M = atoi(line.c_str());
+
     if (M <= 0) {
 		cout << "No document available!" << endl;
 		return 1;
@@ -183,7 +184,8 @@ int dataset::read_newdata(string dfile, string wordmapfile) {
     
     // get number of new documents
     getline(fin, line);
-    M = stoi(line);
+    M = atoi(line.c_str());
+    
     if (M <= 0) {
 		cout << "No document available!" << endl;
 		return 1;
@@ -269,7 +271,8 @@ int dataset::read_newdata_withrawstrs(string dfile, string wordmapfile) {
     
     // get number of new documents
     getline(fin, line);
-    M = stoi(line);
+    M = atoi(line.c_str());
+    
     if (M <= 0) {
 		cout << "No document available!" << endl;
 		return 1;

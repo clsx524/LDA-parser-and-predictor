@@ -1,27 +1,132 @@
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <map>
-#include <set>
-#include "strtokenizer.h"
 #include "utils.h"
-#include "model.h"
-
 using namespace std;
+using namespace boost;
 
-void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
+double utils::stod(const string& str) {
+    double num = 0;
+    int ptflag = 0;
+    for (string::size_type i = 0; i < str.size(); i++) {
+        if (ptflag == 0 && isdigit(str[i])) {
+            num = atoi(&str[i]);
+            ptflag = 1;
+        } else if (ptflag == 1 && isdigit(str[i])) {
+            num = atoi(&str[i])/10.0 + num;
+
+        } else if (str[i] == '.') { 
+            continue;
+        } 
+    }
+    return num;
+}
+
+void utils::addfile(string name, vector<string>& pathset, vector<string>::size_type& size) {
+    string filepath;
+    struct stat info;
+    DIR *dir;
+    stat(name.c_str(), &info);
+
+    if ((info.st_mode & S_IFDIR) == S_IFDIR)
+    {
+        dir = opendir(name.c_str());
+        struct dirent *dirEntry;
+        if (dir == NULL)
+        {
+            cout << "error directory name!" << endl;
+            return;
+        }
+        while ((dirEntry = readdir(dir))) {
+            filepath.assign(dirEntry->d_name);
+            if(filepath.at(0) == '.') {
+                continue;
+            }
+            filepath = name + '/' + filepath;
+            addfile(filepath, pathset, size);
+        }
+        closedir(dir);
+    } else if ((info.st_mode & S_IFREG) == S_IFREG) {
+        if (name.find("[Image]") != string::npos) { return; }
+        cout << size << "   " << name << endl;
+        pathset.push_back(name);
+        size++;
+    } else {
+        cout << "Invalid type of file: " << name << endl;
+    }
+    return;
+}
+
+void utils::readfile(string ofile, strtokenizer& strtok) {
     ifstream fin;
     string str;
     fin.open(ofile.c_str(), ifstream::in);
+
     if (!fin.is_open()) {
         cout << "Cannot open file " << ofile << " to read!" << endl;
         return;
     }  
+//cout << "ok" << endl;
+    boost::regex re1("\'");
+    boost::regex re2("_");
+    string rep1 = "\'\'";
+    string rep2 = " ";
+    //cout << "ok" << endl;
+    while (!fin.eof()) {
+        getline(fin, str);
+        str = regex_replace(str, re1, rep1, boost::match_default | boost::format_all);
+
+        if (strtok.count_tokens() == 0) {
+            str = regex_replace(str, re2, rep2, boost::match_default | boost::format_all);
+            strtok.addToken(str);
+        } else if (str.find("Released Year:") == 0) {
+            strtok.addToken(str.substr(15));
+        } else if (str.find("Running time:") == 0) {
+            strtok.addToken(str.substr(14));
+        } else if (str.find("Director:") == 0) {
+            strtok.addToken(str.substr(10));
+        } else if (str.find("Cast:") == 0) {
+            strtok.addToken(str.substr(6));
+        } else if (str.find("Content:") == 0) {
+            strtok.addToken(str.substr(9));
+        } else if (str.find("Wiki info:") == 0 || str == "") {
+            continue;
+        } else {
+            strtok.addToken(str);
+        }
+    }
+    fin.close();
+}
+
+void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
+    ifstream fin;
+    string str;
+    bool startRead = false;
+    fin.open(ofile.c_str(), ifstream::in);
+    strtokenizer tok;
+    if (!fin.is_open()) {
+        cout << "Cannot open file " << ofile << " to read!" << endl;
+        return;
+    }  
+    // read the title
+    getline(fin, str);
+    strtok.split(str, " \t\n\r", true);
+
+    while (!fin.eof()) {
+        getline(fin, str);
+        if (str.find("Content:") == string::npos) { 
+            continue; 
+        } else {
+            startRead = true;
+            break;
+        }
+    }
+    assert(startRead);
+    tok.parse(str.substr(9), " \t\n\r");
+    for (vector<string>::size_type i = 0; i < tok.count_tokens(); i++) {
+        strtok.split(tok.token(i), " \t\n\r", true);
+    }
+
+    getline(fin, str);
+    assert(str.find("Wiki info:") != string::npos);
+
     while (fin >> str) {
         strtok.split(str, " \t\n\r", true);
     }
@@ -57,6 +162,7 @@ void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, int& size
         }
         closedir(dir);
     } else if ((info.st_mode & S_IFREG) == S_IFREG) {
+        if (name.find("[Image]") != string::npos) { return; }
         cout << size << "   " << name << endl;
         readfile(name, fout, strtok);
         size++;
@@ -374,13 +480,13 @@ int utils::read_and_parse(string filename, model * pmodel) {
             assert((int)strtok.count_tokens() == pmodel->K+1);
             pmodel->nwsum = new int[pmodel->K];
             for (int i = 0; i < pmodel->K; ++i) {
-                pmodel->nwsum[i] = stoi(strtok.token(i+1));
+                pmodel->nwsum[i] = atoi(&(strtok.token(i+1)[0]));
             }
         } else if (optstr == "ndsum") {
             assert((int)strtok.count_tokens() == pmodel->M+1);
             pmodel->ndsum = new int[pmodel->M];
             for (int i = 0; i < pmodel->M; ++i) {
-                pmodel->ndsum[i] = stoi(strtok.token(i+1));
+                pmodel->ndsum[i] = atoi(&(strtok.token(i+1)[0]));
             }
         } else {
             // any more?
@@ -395,19 +501,22 @@ int utils::read_and_parse(string filename, model * pmodel) {
 
 string utils::generate_model_name(int iter) {
     string model_name = "model-";
-    
+    ostringstream ostr;
+    ostr << iter;
+
     string str;
-    
+    string s = ostr.str();
+
     if (0 <= iter && iter < 10) {
-        str = "0000" + to_string(iter);
+        str = "0000" + s;
     } else if (10 <= iter && iter < 100) {
-        str = "000" + to_string(iter);
+        str = "000" + s;
     } else if (100 <= iter && iter < 1000) {
-        str = "00" + to_string(iter);
+        str = "00" + s;
     } else if (1000 <= iter && iter < 10000) {
-        str = "0" + to_string(iter);
+        str = "0" + s;
     } else {
-        str = to_string(iter);
+        str = s;
     }
     
     if (iter >= 0) {

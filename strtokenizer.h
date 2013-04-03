@@ -42,6 +42,7 @@ public:
     void split(string str, string seperators = " ", bool preEnable = false);
     void parse(string str, string seperators);
     void preprocess(string text);
+    void addToken(const string& str);
     
     vector<string>::size_type count_tokens();
 
