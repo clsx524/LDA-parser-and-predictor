@@ -78,9 +78,11 @@ public:
 	}
 
 	bool initDatabase();
-	bool addUser(const string& name, const string& pwd);
-	bool login(const string& name, const string& pwd);
-	bool search(const string& query);
+	bool addUser(const string& name, const string& pwd) const;
+	bool login(const string& name, const string& pwd) const;
+	bool changePassword(const string& name, const string& origin, const string& pwd) const;
+	bool search(const string& query) const;
+	bool preciseFetch(int index) const;
 
 };
 

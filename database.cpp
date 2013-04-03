@@ -54,7 +54,7 @@ bool database::initDatabase() {
     return true;
 }
 
-bool database::addUser(const string& name, const string& pwd) {
+bool database::addUser(const string& name, const string& pwd) const {
 	try {
 		auto_ptr<Connection> con(driver->connect(url, user, password));
 		auto_ptr<Statement> stmt(con->createStatement());
@@ -80,7 +80,7 @@ bool database::addUser(const string& name, const string& pwd) {
 	return true;
 }
 
-bool database::login(const string& name, const string& pwd) {
+bool database::login(const string& name, const string& pwd) const {
 	stringstream msg;
 	try {
 		auto_ptr<Connection> con(driver->connect(url, user, password));
@@ -106,11 +106,29 @@ bool database::login(const string& name, const string& pwd) {
 	return true;
 }
 
-bool database::changePassword(const string& name, const string& pwd) {
-	
+bool database::changePassword(const string& name, const string& origin, const string& pwd) const {
+	bool loginSuccess = login(name, origin);
+	if (!loginSuccess) {
+		cout << "Original password incorrect!" << endl;
+		return false;
+	}
+	stringstream msg;
+	try {
+		auto_ptr<Connection> con(driver->connect(url, user, password));
+		auto_ptr<Statement> stmt(con->createStatement());
+    	stmt->execute("USE " + db);
+    	msg << "UPDATE users SET password='" << pwd << "' WHERE username='" << name << "'";
+    	stmt->execute(msg.str());
+    	stmt.reset(NULL);
+	} catch (sql::SQLException &e) {
+		cout << "#Error: " << e.what() << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		return false;
+	}
+	return true;
 }
 
-bool database::search(const string& query) {
+bool database::search(const string& query) const {
 	int row = 0;
 	stringstream sql;
 	try {
@@ -138,6 +156,33 @@ bool database::search(const string& query) {
 		return false;
 	}
 
+	return true;	
+}
+
+bool database::preciseFetch(int index) const {
+	stringstream out;
+	try {
+		auto_ptr<Connection> con(driver->connect(url, user, password));
+		auto_ptr<Statement> stmt(con->createStatement());
+
+		stmt->execute("USE " + db);
+		out << "SELECT title, director, year, content, number FROM media_info WHERE number=" << index;
+		std::auto_ptr<ResultSet> res(stmt->executeQuery(out.str()));
+		cout << "# Fetching search for " << index << endl;
+		if (res->next()) {
+			cout << "# title = " << res->getString("title") << endl;
+			cout << "# director = " << res->getString("director") << endl;
+			cout << "# year = " << res->getInt("year") << endl;
+			cout << "# content = " << res->getString("content") << endl;
+		} else {
+			return false;
+		}
+		stmt.reset(NULL);
+	} catch (sql::SQLException &e) {
+		cout << "#Error: " << e.what() << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+		return false;
+	}
 	return true;	
 }
 

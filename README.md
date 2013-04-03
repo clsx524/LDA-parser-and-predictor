@@ -12,4 +12,4 @@ LDA parser and predictor
 	./lda -inf -dir model -model model-final -niters 30 -twords 20 -dfile model/predata.txt
 	
 ## ranking
-	./lda -ranking <int> -disp <int> -dir model -model model-final
+	./lda -ranking 78 -disp 10 -dir model -model model-final

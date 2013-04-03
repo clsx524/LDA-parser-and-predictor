@@ -11,8 +11,8 @@ data: database.o utils.o strtokenizer.o data.cpp
 	$(CC) $(CCFLAGS) -o data data.cpp database.o utils.o strtokenizer.o $(MYSQL) $(BOOST) -lm 
 	strip data
 
-lda: dataset.o strtokenizer.o utils.o model.o lda.cpp
-	$(CC) $(CCFLAGS) -o lda lda.cpp dataset.o strtokenizer.o utils.o model.o -lm $(BOOST)
+lda: dataset.o strtokenizer.o utils.o model.o database.o lda.cpp
+	$(CC) $(CCFLAGS) -o lda lda.cpp dataset.o strtokenizer.o utils.o model.o database.o $(MYSQL) $(BOOST) -lm
 	strip lda
 
 strtokenizer.o:	strtokenizer.h strtokenizer.cpp

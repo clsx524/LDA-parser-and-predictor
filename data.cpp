@@ -29,15 +29,20 @@ int main(int argc, char ** argv) {
     } else if (argc == 3) {
         u = argv[1];
         p = argv[2];       
-    } else {
-        cout << "Invalid number of arguments." << endl;
-        return 1;
+    } else if (argc == 4) {
+        u = argv[1];
+        p = argv[2];
+        path = argv[3];
     }
+    // } else {
+    //     cout << "Invalid number of arguments." << endl;
+    //     return 1;
+    // }
 
     //data.initDatabase();
-    cout << data.search(path) << endl;
-
-
+    //cout << data.search(path) << endl;
+    //cout << data.changePassword(u,p,path);
+    cout << data.preciseFetch(43);
 
     return 0;
 }

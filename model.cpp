@@ -1116,6 +1116,10 @@ int model::init_ranking() {
 
 void model::ranking() {
     assert(rank_num > 0 && rank_num <= M);
+    database db;
+    cout << " =============== " << rank_num << " =============== " << endl;
+    db.preciseFetch(rank_num);
+
     vector<pair<int,double> > p;
     for (int i = 0; i < M; ++i) {
         double tmp = 0;
@@ -1129,8 +1133,10 @@ void model::ranking() {
         p.push_back(pair<int, double>(i,tmp));
     }
     utils::quicksort(p, 0, p.size()-1);
+
     for (int i = 0; i < disp; ++i) {
-        cout << p[i].first << " " << p[i].second << endl;
+        cout << " =============== " << p[i].first << " =============== " << endl;
+        db.preciseFetch(p[i].first);
     }
 }
 
