@@ -43,6 +43,9 @@ bool database::initDatabase() {
         	stmt->execute(sql.str());
         	strtok.clear();
     	}
+    	sql.str();
+    	sql << "ALTER TABLE media_info ADD number INT UNSIGNED NOT NULL AUTO_INCREMENT KEY";
+    	stmt-> execute(sql.str());
     	stmt.reset(NULL);
     } catch (sql::SQLException &e) {
 		cout << "#Error: " << e.what() << " (MySQL error code: " << e.getErrorCode();
