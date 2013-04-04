@@ -1,21 +1,24 @@
 #include "utils.h"
+
 using namespace std;
 using namespace boost;
 
 double utils::stod(const string& str) {
     double num = 0;
-    int ptflag = 0;
-    for (string::size_type i = 0; i < str.size(); i++) {
-        if (ptflag == 0 && isdigit(str[i])) {
-            num = atoi(&str[i]);
-            ptflag = 1;
-        } else if (ptflag == 1 && isdigit(str[i])) {
-            num = atoi(&str[i])/10.0 + num;
-
-        } else if (str[i] == '.') { 
-            continue;
-        } 
+    int n = 0;
+    int j = str.find_first_of(".");
+    string sub = str.substr(j+1);
+    for (string::size_type k = 0; k < sub.size(); k++) {
+        assert(isdigit(sub[k]));
+        if (sub[k] == '0') {
+            n++;
+        } else {
+            break;
+        }
     }
+    long tmp = atol(sub.c_str());
+    num = tmp / pow(10.0, (int)sub.size());
+
     return num;
 }
 
@@ -63,12 +66,11 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
         cout << "Cannot open file " << ofile << " to read!" << endl;
         return;
     }  
-//cout << "ok" << endl;
     boost::regex re1("\'");
     boost::regex re2("_");
     string rep1 = "\'\'";
     string rep2 = " ";
-    //cout << "ok" << endl;
+
     while (!fin.eof()) {
         getline(fin, str);
         str = regex_replace(str, re1, rep1, boost::match_default | boost::format_all);
@@ -528,19 +530,44 @@ string utils::generate_model_name(int iter) {
     return model_name;
 }
 
-void utils::sort(vector<double> & probs, vector<int> & words) {
-    for (int i = 0; i < (int)probs.size() - 1; i++) {
-        for (int j = i + 1; j < (int)probs.size(); j++) {
-            if (probs[i] < probs[j]) {
-                double tempprob = probs[i];
-                int tempword = words[i];
-                probs[i] = probs[j];
-                words[i] = words[j];
-                probs[j] = tempprob;
-                words[j] = tempword;
-            }
+pair<int, double> utils::quicksort_wr(vector<pair<int, double> > vect, int left, int right) {
+    int l_hold, r_hold;
+    pair<int, double> pivot;
+    
+    l_hold = left;
+    r_hold = right;    
+    int pivotidx = left;
+    pivot = vect[pivotidx];
+    
+    while (left < right) {
+        while (vect[right].second <= pivot.second && left < right) {
+            right--;
+        }
+        if (left != right) {
+            vect[left] = vect[right];
+            left++;
+        }
+        while (vect[left].second >= pivot.second && left < right) {
+            left++;
+        }
+        if (left != right) {
+            vect[right] = vect[left];
+            right--;
         }
     }
+    
+    vect[left] = pivot;
+    pivotidx = left;
+    left = l_hold;
+    right = r_hold;
+    
+    if (left < pivotidx) {
+        quicksort(vect, left, pivotidx - 1);
+    }
+    if (right > pivotidx) {
+        quicksort(vect, pivotidx + 1, right);
+    }   
+    return vect[0]; 
 }
 
 void utils::quicksort(vector<pair<int, double> > & vect, int left, int right) {
@@ -581,5 +608,6 @@ void utils::quicksort(vector<pair<int, double> > & vect, int left, int right) {
         quicksort(vect, pivotidx + 1, right);
     }    
 }
+
 
 

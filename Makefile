@@ -31,7 +31,7 @@ database.o: database.h database.cpp
 	$(CC) $(CCFLAGS) -c database.cpp
 
 test:
-	
+
 
 clean:
 	rm -rf *.o *~ lda data

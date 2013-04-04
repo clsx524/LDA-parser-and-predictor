@@ -17,12 +17,6 @@ void strtokenizer::split(string str, string seperators, bool preEnable) {
 
 void strtokenizer::preprocess(string text) {
     text = verify(text);
-    //regex re1("([a-z])([0-9])");
-    //regex re2("([0-9])([a-z])");
-    //regex re3("\\s+");
-    //text = regex_replace(text, re1, "\\1 \\2");
-    //text = regex_replace(text, re2, "\\1 \\2");
-    //text = regex_replace(text, re3, " ");
     if (text.size() > 2) {
         text = stem(text);
     } else {
@@ -32,7 +26,6 @@ void strtokenizer::preprocess(string text) {
     if (text != "") {
         tokens.push_back(text);
     }
-    
 }
 
 void strtokenizer::parse(string str, string seperators) {
@@ -131,7 +124,6 @@ void strtokenizer::print() {
  the new end-point of the string, k'. Stemming never increases word
  length, so 0 <= k' <= k.
  */
-
 string strtokenizer::stem(string b) {
     string str;
     if (z == NULL)
@@ -170,7 +162,6 @@ bool strtokenizer::cons(int i) {
  <c>vcvcvc<v> gives 3
  ....
  */
-
 int strtokenizer::m() {
     int n = 0;
     int i = 0;
@@ -199,7 +190,6 @@ int strtokenizer::m() {
 }
 
 /* vowelinstem(z) is true <=> 0,...j contains a vowel */
-
 bool strtokenizer::vowelinstem()
 {
     int j = z->j;
@@ -211,7 +201,6 @@ bool strtokenizer::vowelinstem()
 }
 
 /* doublec(j) is true <=> j,(j-1) contain a double consonant. */
-
 bool strtokenizer::doublec(int j) {
     if (j < 1) return false;
     if (z->str[j] != z->str[j - 1]) return false;
@@ -226,7 +215,6 @@ bool strtokenizer::doublec(int j) {
  snow, box, tray.
  
  */
-
 bool strtokenizer::cvc(int i) {
     if (i < 2 || !cons(i) || cons(i - 1) || !cons(i - 2)) return false;
     char ch = z->str[i];
@@ -235,7 +223,6 @@ bool strtokenizer::cvc(int i) {
 }
 
 /* ends(s) is true <=> 0,...k ends with the string s. */
-
 bool strtokenizer::ends(string s) { 
     int length = s.size(); 
     int k = (z->str).size();
@@ -251,7 +238,6 @@ bool strtokenizer::ends(string s) {
 
 /* setto(s) sets (j+1),...k to the characters in the string s, readjusting
  k. */
-
 void strtokenizer::setto(string s) {
     int j = z->j;
     z->str = (z->str).substr(0, j+1).append(s);
@@ -259,7 +245,6 @@ void strtokenizer::setto(string s) {
 }
 
 /* r(s) is used further down. */
-
 void strtokenizer::r(string s) { if (m() > 0) setto(s); }
 
 /* step1ab(z) gets rid of plurals and -ed or -ing. e.g.
@@ -283,7 +268,6 @@ void strtokenizer::r(string s) { if (m() > 0) setto(s); }
  meetings  ->  meet
  
  */
-
 void strtokenizer::step1ab() {
     if ((z->str)[(z->str).size()-1] == 's') {  
         if (ends("sses")) (z->str).erase((z->str).size()-2,2); 
@@ -308,16 +292,13 @@ void strtokenizer::step1ab() {
 }
 
 /* step1c(z) turns terminal y to i when there is another vowel in the stem. */
-
 void strtokenizer::step1c() {
     if (ends("y") && vowelinstem()) z->str[(z->str).size()-1] = 'i';
 }
 
-
 /* step2(z) maps double suffices to single ones. so -ization ( = -ize plus
  -ation) maps to -ize etc. note that the string before the suffix must give
  m(z) > 0. */
-
 void strtokenizer::step2() {
     switch (z->str[(z->str).size()-2]) {
         case 'a': 
@@ -365,7 +346,6 @@ void strtokenizer::step2() {
     } }
 
 /* step3(z) deals with -ic-, -full, -ness etc. similar strategy to step2. */
-
 void strtokenizer::step3() {
     switch ((z->str)[(z->str).size()-1]) {
         case 'e': 
@@ -387,7 +367,6 @@ void strtokenizer::step3() {
 }
 
 /* step4(z) takes off -ant, -ence etc., in context <c>vcvc<v>. */
-
 void strtokenizer::step4() {
     switch (z->str[(z->str).size()-2]) {
         case 'a': 
@@ -429,7 +408,6 @@ void strtokenizer::step4() {
 
 /* step5(z) removes a final -e if m(z) > 1, and changes -ll to -l if
  m(z) > 1. */
-
 void strtokenizer::step5() {
     z->j = (z->str).size()-1;
     if ((z->str)[(z->str).size()-1] == 'e') {

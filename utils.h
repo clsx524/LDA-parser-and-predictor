@@ -10,6 +10,7 @@
 #include <sstream>
 #include <string>
 #include <set>
+#include <cmath>
 #include <boost/regex.hpp>
 #include "strtokenizer.h"
 #include "model.h"
@@ -33,7 +34,7 @@ public:
     static double stod(const string& str); 
     
     // sort    
-    static void sort(vector<double> & probs, vector<int> & words);
+    static pair<int, double> quicksort_wr(vector<pair<int, double> > vect, int left, int right);
     static void quicksort(vector<pair<int, double> > & vect, int left, int right);
 
     static void readfile(string ofile, ofstream& fout, strtokenizer& strtok);

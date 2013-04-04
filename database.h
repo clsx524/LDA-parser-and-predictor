@@ -14,28 +14,6 @@
 using namespace std;
 using namespace sql;
 
-// #if __STDC_VERSION__ < 199901L
-// #  if __GNUC__ >= 2
-// #    define EXAMPLE_FUNCTION __FUNCTION__
-// #  else
-// #    define EXAMPLE_FUNCTION "(function n/a)"
-// #  endif
-// #elif defined(_MSC_VER)
-// #  if _MSC_VER < 1300
-// #    define EXAMPLE_FUNCTION "(function n/a)"
-// #  else
-// #    define EXAMPLE_FUNCTION __FUNCTION__
-// #  endif
-// #elif (defined __func__)
-// #  define EXAMPLE_FUNCTION __func__
-// #else
-// #  define EXAMPLE_FUNCTION "(function n/a)"
-// #endif
-
-// #ifndef __LINE__
-//   #define __LINE__ "(line number n/a)"
-// #endif
-
 // Connection properties
 #define CONNECT_DB   "media"
 #define CONNECT_HOST "unix:///usr/local/zend/mysql/tmp/mysql.sock" //"tcp://127.0.0.1:3306"
@@ -85,8 +63,5 @@ public:
 	bool preciseFetch(int index) const;
 
 };
-
-
-
 
 #endif

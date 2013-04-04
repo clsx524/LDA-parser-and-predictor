@@ -16,7 +16,7 @@ using namespace std;
 // LDA model
 class model {
 public:
-    // fixed options
+    vector<int> movie_classes;
     string wordmapfile;		// file that contains word map [string -> integer id]
     string trainlogfile;	// training log file
     string tassign_suffix;	// suffix for topic assignment file
@@ -140,6 +140,8 @@ public:
 
     int init_ranking();
     void ranking();
+
+    void classification();
 };
 
 #endif

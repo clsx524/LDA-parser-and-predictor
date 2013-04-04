@@ -199,6 +199,10 @@ int model::init(int argc, char ** argv) {
             return 1;
         }
     }
+
+    for (int i = 0; i < K; i++) {
+        movie_classes.push_back(i);
+    }
     return 0;
 }
 
@@ -1089,7 +1093,8 @@ int model::init_ranking() {
         return 1;
     }
     ifstream in;
-    string input = dir + '/' + model_name + theta_suffix, str;
+    string input = dir + model_name + theta_suffix, str;
+
     strtokenizer strtok;
     in.open(input.c_str(), ifstream::in);
     if (!in.is_open()) {
@@ -1138,5 +1143,22 @@ void model::ranking() {
         cout << " =============== " << p[i].first << " =============== " << endl;
         db.preciseFetch(p[i].first);
     }
+
+    classification();
 }
+
+void model::classification() {
+    init_ranking();
+    vector<pair<int,double> > p;
+
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < K; j++) {
+           p.push_back(pair<int, double>(j, theta[i][j]));
+        }
+        pair<int,double> tmp = utils::quicksort_wr(p, 0, p.size()-1);
+        cout << "Movie " << i  << "th: " << tmp.first << " " << tmp.second << endl;
+        p.clear();
+    }
+}
+
 
