@@ -16,7 +16,9 @@ using namespace std;
 // LDA model
 class model {
 public:
-    vector<int> movie_classes;
+    vector<pair<string, int> > movie_classes;
+    string movie_classes_trn_file;// file containing movie classes
+    string movie_classes_pre_file;
     string wordmapfile;		// file that contains word map [string -> integer id]
     string trainlogfile;	// training log file
     string tassign_suffix;	// suffix for topic assignment file

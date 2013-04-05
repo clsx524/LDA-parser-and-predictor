@@ -84,10 +84,29 @@ int dataset::read_wordmap(string wordmapfile, mapid2word * pid2word) {
     return 0;
 }
 
-int dataset::read_trndata(string dfile, string wordmapfile) {
+int dataset::read_trndata(string classfile, string dfile, string wordmapfile, vector<pair<string, int> >& movie_classes) {
+   
     mapword2id word2id;
-    
+
     ifstream fin;
+    string line;
+    strtokenizer strtok;
+
+    fin.open(classfile.c_str(), ifstream::in);
+    if (!fin.is_open()) {
+        cout << "Cannot open file " <<  classfile << " to read!" << endl;
+        return 1;
+    }
+
+    while(!fin.eof()) {
+        getline(fin, line);
+        strtok.parse(line, " \t\r\n");
+        movie_classes.push_back(pair<string, int>(strtok.token(0), atoi(strtok.token(1).c_str())));
+        cout << movie_classes[movie_classes.size()-1].first << " " << movie_classes[movie_classes.size()-1].second << endl;
+        strtok.clear();
+    }
+    fin.close();
+
     fin.open(dfile.c_str(), ifstream::in);
     if (!fin.is_open()) {
 		cout << "Cannot open file " <<  dfile << " to read!" << endl;
@@ -95,7 +114,7 @@ int dataset::read_trndata(string dfile, string wordmapfile) {
     }
     
     mapword2id::iterator it;
-    string line;
+    
     
     // get the number of documents
     getline(fin, line);
@@ -115,7 +134,7 @@ int dataset::read_trndata(string dfile, string wordmapfile) {
     
     // set number of words to zero
     V = 0;
-    strtokenizer strtok;
+    
     for (int i = 0; i < M; i++) {
 		getline(fin, line);
         cout << i << endl;

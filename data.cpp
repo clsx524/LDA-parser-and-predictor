@@ -39,10 +39,10 @@ int main(int argc, char ** argv) {
     //     return 1;
     // }
 
-    //data.initDatabase();
+    data.initDatabase();
     //cout << data.search(path) << endl;
     //cout << data.changePassword(u,p,path);
-    cout << data.preciseFetch(43);
+    //cout << data.preciseFetch(43);
 
     return 0;
 }

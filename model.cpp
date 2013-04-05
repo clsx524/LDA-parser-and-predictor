@@ -125,6 +125,8 @@ void model::set_default_values() {
     phi_suffix = ".phi";
     others_suffix = ".others";
     twords_suffix = ".twords";
+    movie_classes_trn_file = "movie_classes_trn.txt";
+    movie_classes_pre_file = "movie_classes_pre.txt";
     
     dir = "./";
     dfile = "trndocs.dat";
@@ -198,10 +200,6 @@ int model::init(int argc, char ** argv) {
         if (init_ranking()) {
             return 1;
         }
-    }
-
-    for (int i = 0; i < K; i++) {
-        movie_classes.push_back(i);
     }
     return 0;
 }
@@ -594,12 +592,12 @@ int model::save_inf_model_twords(string filename) {
 
 int model::init_est() {
     int m, n, w, k;
-    
+
     p = new double[K]; // K : number of topics
     
     // + read training data
     ptrndata = new dataset;
-    if (ptrndata->read_trndata(dir + dfile, dir + wordmapfile)) {
+    if (ptrndata->read_trndata(dir + movie_classes_trn_file, dir + dfile, dir + wordmapfile, movie_classes)) {
         cout << "Fail to read training data!" << endl;
         return 1;
     }
@@ -636,7 +634,8 @@ int model::init_est() {
     for (m = 0; m < M; m++) {
         ndsum[m] = 0;
     }
-    
+    int i = 0, j = movie_classes[0].second, topic;
+
     srandom(time(0)); // initialize for random number generation
     z = new int*[M]; // M : number of docs
     for (m = 0; m < ptrndata->M; m++) {
@@ -646,7 +645,15 @@ int model::init_est() {
         
         // initialize for z
         for (n = 0; n < N; n++) {
-    	    int topic = (int)(((double)random() / RAND_MAX) * K);
+    	    //int topic = (int)(((double)random() / RAND_MAX) * K);
+            if (j == 0) {
+                topic = ++i;
+                j = movie_classes[i].second-1;
+            } else {
+                topic = i;
+                j--;
+            }
+
     	    z[m][n] = topic;
     	    
     	    // number of instances of word i assigned to topic j
@@ -744,25 +751,35 @@ int model::init_estc() {
 }
 
 void model::preprocess() {
-    ofstream fout;
-    string output;
+    ofstream fout, fout2;
+    string output, output2;
     int size = 65535;
     if (file_type == 1) {
         output = "model/trndata.txt";
+        output2 = "model/movie_classes_trn.txt";
+
     } else if (file_type == 2){
         output = "model/predata.txt";
+        output2 = "model/movie_classes_pre.txt";
     } else {
         cout << "Invalid file_type" << endl;
     }
     
     fout.open(output.c_str(), ofstream::ate);
+    fout2.open(output2.c_str(), ofstream::ate);
     strtokenizer strtok;
     fout << size;
     size = 0;
-    utils::addfile(originDir, fout, strtok, size);
+    utils::addfile(originDir, fout, strtok, movie_classes, size);
     fout.seekp(0);
     fout << size << endl;
     fout.close();
+
+    for (vector<pair<string, int> >::size_type i = 0; i < movie_classes.size(); i++) {
+        fout2 << movie_classes[i].first << " " << movie_classes[i].second << endl;
+    }
+    fout2.close();
+
     return;
 }
 
@@ -860,6 +877,10 @@ void model::compute_phi() {
         }
     }
 }
+
+// void model::compute_alpha () {
+
+// }
 
 int model::init_inf() {
     // estimating the model from a previously estimated one
@@ -1086,6 +1107,10 @@ void model::compute_newphi() {
         }
     }
 }
+
+// void  model::compute_newalpha() {
+
+// }
 
 int model::init_ranking() {
     if (load_model(model_name)) {

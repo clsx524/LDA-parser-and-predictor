@@ -1,0 +1,16 @@
+Action 191
+Animation 188
+comedy 166
+Documentary 199
+Drama 195
+Family&kids 189
+Foreign 194
+Horror 197
+MusicPerformance 178
+Mystery&Suspense 193
+Romance 198
+Sci&Fi 578
+Special Interest 196
+Sports 196
+War 197
+Western 194

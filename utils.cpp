@@ -22,41 +22,6 @@ double utils::stod(const string& str) {
     return num;
 }
 
-void utils::addfile(string name, vector<string>& pathset, vector<string>::size_type& size) {
-    string filepath;
-    struct stat info;
-    DIR *dir;
-    stat(name.c_str(), &info);
-
-    if ((info.st_mode & S_IFDIR) == S_IFDIR)
-    {
-        dir = opendir(name.c_str());
-        struct dirent *dirEntry;
-        if (dir == NULL)
-        {
-            cout << "error directory name!" << endl;
-            return;
-        }
-        while ((dirEntry = readdir(dir))) {
-            filepath.assign(dirEntry->d_name);
-            if(filepath.at(0) == '.') {
-                continue;
-            }
-            filepath = name + '/' + filepath;
-            addfile(filepath, pathset, size);
-        }
-        closedir(dir);
-    } else if ((info.st_mode & S_IFREG) == S_IFREG) {
-        if (name.find("[Image]") != string::npos) { return; }
-        cout << size << "   " << name << endl;
-        pathset.push_back(name);
-        size++;
-    } else {
-        cout << "Invalid type of file: " << name << endl;
-    }
-    return;
-}
-
 void utils::readfile(string ofile, strtokenizer& strtok) {
     ifstream fin;
     string str;
@@ -95,6 +60,41 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
         }
     }
     fin.close();
+}
+
+void utils::addfile(string name, vector<string>& pathset, vector<string>::size_type& size) {
+    string filepath;
+    struct stat info;
+    DIR *dir;
+    stat(name.c_str(), &info);
+
+    if ((info.st_mode & S_IFDIR) == S_IFDIR)
+    {
+        dir = opendir(name.c_str());
+        struct dirent *dirEntry;
+        if (dir == NULL)
+        {
+            cout << "error directory name!" << endl;
+            return;
+        }
+        while ((dirEntry = readdir(dir))) {
+            filepath.assign(dirEntry->d_name);
+            if(filepath.at(0) == '.') {
+                continue;
+            }
+            filepath = name + '/' + filepath;
+            addfile(filepath, pathset, size);
+        }
+        closedir(dir);
+    } else if ((info.st_mode & S_IFREG) == S_IFREG) {
+        if (name.find("[Image]") != string::npos) { return; }
+        cout << size << "   " << name << endl;
+        pathset.push_back(name);
+        size++;
+    } else {
+        cout << "Invalid type of file: " << name << endl;
+    }
+    return;
 }
 
 void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
@@ -139,7 +139,7 @@ void utils::readfile(string ofile, ofstream& fout, strtokenizer& strtok) {
     strtok.clear();
 }
 
-void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, int& size) {
+void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, vector<pair<string, int> >& classes, int& size) {
     string filepath;
     struct stat info;
     DIR *dir;
@@ -160,7 +160,7 @@ void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, int& size
                 continue;
             }
             filepath = name + '/' + filepath;
-            addfile(filepath, fout, strtok, size);
+            addfile(filepath, fout, strtok, classes, size);
         }
         closedir(dir);
     } else if ((info.st_mode & S_IFREG) == S_IFREG) {
@@ -168,6 +168,17 @@ void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, int& size
         cout << size << "   " << name << endl;
         readfile(name, fout, strtok);
         size++;
+
+        strtokenizer strname;
+        strname.parse(name, "/");
+        assert(strname.count_tokens() == 3);
+        for (vector<pair<string, int> >::size_type i = 0; i < classes.size(); i++) {
+            if (classes[i].first == strname.token(1)) {
+                classes[i].second += 1;
+                return;
+            }
+        } 
+        classes.push_back(pair<string, int>(strname.token(1),1));
     } else {
         cout << "Invalid type of file: " << name << endl;
     }

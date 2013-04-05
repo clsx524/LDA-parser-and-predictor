@@ -41,7 +41,7 @@ public:
     static void readfile(string ofile, strtokenizer& strtok);
 
     static void addfile(string name, vector<string>& pathset, vector<string>::size_type& size);
-    static void addfile(string name, ofstream& fout, strtokenizer& strtok, int& size);
+    static void addfile(string name, ofstream& fout, strtokenizer& strtok, vector<pair<string, int> >& classes, int& size);
 };
 
 #endif

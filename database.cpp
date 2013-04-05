@@ -12,7 +12,7 @@ bool database::initDatabase() {
     /* Create a test table demonstrating the use of sql::Statement.execute() */
     stmt->execute("USE " + db);
     stmt->execute("DROP TABLE IF EXISTS media_info");
-    stmt->execute("CREATE TABLE media_info (title VARCHAR(100), year CHAR(4), length SMALLINT UNSIGNED, director VARCHAR(20), cast VARCHAR(50), content VARCHAR(200), wiki VARCHAR(10000), number SMALLINT UNSIGNED)");
+    stmt->execute("CREATE TABLE media_info (title VARCHAR(100), year CHAR(4), length SMALLINT UNSIGNED, director VARCHAR(20), cast VARCHAR(50), content VARCHAR(2000), wiki VARCHAR(10000))");
     cout << "#\t media_info table created" << endl;
     
     cout << "#Starting add files ... " << endl;
@@ -26,7 +26,7 @@ bool database::initDatabase() {
     	for (vector<string>::size_type i = 0; i < size; i++) {
         	utils::readfile(pathset[i], strtok);
         	sql.str("");
-        	sql << "INSERT INTO media_info (title, year, length, director, cast, content, wiki, number) VALUES (";
+        	sql << "INSERT INTO media_info (title, year, length, director, cast, content, wiki) VALUES (";
         	sql << "'" << strtok.token(0) << "', "; // title
         	sql << "'" << strtok.token(1) << "', "; // year
         	sql << strtok.token(2) << ", ";         // length
@@ -37,15 +37,13 @@ bool database::initDatabase() {
         	for (vector<string>::size_type i = 6; i < strtok.count_tokens(); i++) {
             	sql << strtok.token(i);
         	}
-        	sql << "', '" << size+1 << "')" ;
+        	sql << "')" ;
         
         	//sql << test_data[i].id << ", '" << test_data[i].label << "')";
         	stmt->execute(sql.str());
         	strtok.clear();
     	}
-    	sql.str();
-    	sql << "ALTER TABLE media_info ADD number INT UNSIGNED NOT NULL AUTO_INCREMENT KEY";
-    	stmt-> execute(sql.str());
+    	stmt-> execute("ALTER TABLE media_info ADD number INT UNSIGNED NOT NULL AUTO_INCREMENT KEY");
     	stmt.reset(NULL);
     } catch (sql::SQLException &e) {
 		cout << "#Error: " << e.what() << " (MySQL error code: " << e.getErrorCode();
