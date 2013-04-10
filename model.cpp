@@ -7,17 +7,11 @@
 using namespace std;
 
 model::~model() {
-    if (p) {
-        delete p;
-    }
+    if (p) { delete p; }
     
-    if (ptrndata) {
-        delete ptrndata;
-    }
+    if (ptrndata) { delete ptrndata; }
     
-    if (pnewdata) {
-        delete pnewdata;
-    }
+    if (pnewdata) { delete pnewdata; }
     
     if (z) {
         for (int m = 0; m < M; m++) {
@@ -139,8 +133,10 @@ void model::set_default_values() {
     M = 0;
     V = 0;
     K = 100;
-    alpha = 50.0 / K;
-    beta = 0.1;
+
+    alpha = -1.0;
+    beta = -1.0;
+
     niters = 2000;
     liter = 0;
     savestep = 200;
@@ -167,25 +163,10 @@ void model::set_default_values() {
     newphi = NULL;
 }
 
-int model::parse_args(int argc, char ** argv) {
-    return utils::parse_args(argc, argv, this);
-}
-
-int model::init(int argc, char ** argv) {
-    // call parse_args
-    if (parse_args(argc, argv)) {
-        return 1;
-    }
-    
+int model::init() {
     if (model_status == MODEL_STATUS_EST) {
 	    // estimating the model from scratch
 	    if (init_est()) {
-	        return 1;
-        }
-        
-    } else if (model_status == MODEL_STATUS_ESTC) {
-	    // estimating the model from a previously estimated one
-	    if (init_estc()) {
 	        return 1;
         }
         
@@ -194,12 +175,24 @@ int model::init(int argc, char ** argv) {
 	    if (init_inf()) {
 	        return 1;
 	    }
+    } else if (model_status == MODEL_STATUS_ESTC) {
+        // estimating the model from a previously estimated one
+        if (init_estc()) {
+            return 1;
+        }
+        
     } else if (model_status == MODEL_STATUS_PREPROCESS) {
 
     } else if (model_status == MODEL_STATUS_RANKING) {
         if (init_ranking()) {
             return 1;
         }
+
+    } else if (model_status == MODEL_STATUS_CLASSIFIER) {
+        if (init_ranking()) {
+            return 1;
+        }
+
     }
     return 0;
 }
@@ -362,7 +355,7 @@ int model::save_model_others(string filename) {
         cout << "Cannot open file " << filename.c_str() << " to save!" << endl;
         return 1;
     }
-    
+
     fout << "alpha=" << alpha << endl;
     fout << "beta=" << beta << endl;
     fout << "ntopics=" << K << endl;
@@ -521,13 +514,18 @@ int model::save_inf_model_others(string filename) {
         cout << "Cannot open file " << filename.c_str() << " to save!" << endl;
         return 1;
     }
-    
-    fout << "alpha=" << alpha << endl;
-    fout << "beta=" << beta << endl;
+
     fout << "ntopics=" << K << endl;
     fout << "ndocs=" << newM << endl;
     fout << "nwords=" << newV << endl;
     fout << "liter=" << inf_liter << endl;
+
+    fout << "alpha=" << alpha << endl;
+    fout << "beta=" << beta << endl;
+    fout << "ntopics=" << K << endl;
+    fout << "ndocs=" << M << endl;
+    fout << "nwords=" << V << endl;
+    fout << "liter=" << liter << endl;
 
     fout << "nwsum=";
     for (int i = 0; i < K; ++i) {
@@ -634,7 +632,7 @@ int model::init_est() {
     for (m = 0; m < M; m++) {
         ndsum[m] = 0;
     }
-    int i = 0, j = movie_classes[0].second, topic;
+    //int i = 0, j = movie_classes[0].second, topic;
 
     srandom(time(0)); // initialize for random number generation
     z = new int*[M]; // M : number of docs
@@ -645,14 +643,14 @@ int model::init_est() {
         
         // initialize for z
         for (n = 0; n < N; n++) {
-    	    //int topic = (int)(((double)random() / RAND_MAX) * K);
-            if (j == 0) {
-                topic = ++i;
-                j = movie_classes[i].second-1;
-            } else {
-                topic = i;
-                j--;
-            }
+    	    int topic = (int)(((double)random() / RAND_MAX) * K);
+            // if (j == 0) {
+            //     topic = ++i;
+            //     j = movie_classes[i].second-1;
+            // } else {
+            //     topic = i;
+            //     j--;
+            // }
 
     	    z[m][n] = topic;
     	    
@@ -696,18 +694,18 @@ int model::init_estc() {
     for (w = 0; w < V; w++) {
         nw[w] = new int[K];
         for (k = 0; k < K; k++) {
-    	    nw[w][k] = 0;
+            nw[w][k] = 0;
         }
     }
-	
+    
     nd = new int*[M];
     for (m = 0; m < M; m++) {
         nd[m] = new int[K];
         for (k = 0; k < K; k++) {
-    	    nd[m][k] = 0;
+            nd[m][k] = 0;
         }
     }
-	
+    
     nwsum = new int[K];
     for (k = 0; k < K; k++) {
         nwsum[k] = 0;
@@ -723,25 +721,25 @@ int model::init_estc() {
         
         // assign values for nw, nd, nwsum, and ndsum
         for (n = 0; n < N; n++) {
-    	    int w = ptrndata->docs[m]->words[n];
-    	    int topic = z[m][n];
-    	    
-    	    // number of instances of word i assigned to topic j
-    	    nw[w][topic] += 1;
-    	    // number of words in document i assigned to topic j
-    	    nd[m][topic] += 1;
-    	    // total number of words assigned to topic j
-    	    nwsum[topic] += 1;
+            int w = ptrndata->docs[m]->words[n];
+            int topic = z[m][n];
+            
+            // number of instances of word i assigned to topic j
+            nw[w][topic] += 1;
+            // number of words in document i assigned to topic j
+            nd[m][topic] += 1;
+            // total number of words assigned to topic j
+            nwsum[topic] += 1;
         }
         // total number of words in document i
         ndsum[m] = N;
     }
-	
+    
     theta = new double*[M];
     for (m = 0; m < M; m++) {
         theta[m] = new double[K];
     }
-	
+    
     phi = new double*[K];
     for (k = 0; k < K; k++) {
         phi[k] = new double[V];
@@ -784,6 +782,13 @@ void model::preprocess() {
 }
 
 void model::estimate() {
+    ofstream fout;
+    fout.open("model/alpha.txt", ofstream::out);
+
+    if (!fout.is_open()) {
+        cout << "can't open file" << endl;
+        return;
+    }
     if (twords > 0) {
         // print out top words per topic
         dataset::read_wordmap(dir + wordmapfile, &id2word);
@@ -804,20 +809,24 @@ void model::estimate() {
                 z[m][n] = topic;
 	        }
 	    }
-        
-	    if (savestep > 0) {
-	        if (liter % savestep == 0) {
-                // saving the model
-                cout << "Saving the model at iteration " << liter << " ..." << endl;
-                compute_theta();
-                compute_phi();
-                save_model(utils::generate_model_name(liter));
-	        }
+            fout << alpha << " " << beta << endl;
+            cout << alpha << " " << beta << endl;
+	    if (savestep > 0 && liter % savestep == 0) {
+            // saving the model
+            cout << "Saving the model at iteration " << liter << " ..." << endl;
+            //compute_alpha();
+            //compute_beta();
+            compute_theta();
+            compute_phi();
+
+            save_model(utils::generate_model_name(liter));
 	    }
     }
     
     cout << "Gibbs sampling completed!" << endl;
     cout << "Saving the final model!" << endl;
+    //compute_alpha();
+    //compute_beta();
     compute_theta();
     compute_phi();
     liter--;
@@ -833,8 +842,9 @@ int model::sampling(int m, int n) {
     nwsum[topic] -= 1;
     ndsum[m] -= 1;
     
-    double Vbeta = V * beta;
     double Kalpha = K * alpha;
+    double Vbeta = V * beta;
+
     // do multinomial sampling via cumulative method
     for (int k = 0; k < K; k++) {
 	    p[k] = (nw[w][k] + beta) / (nwsum[k] + Vbeta) *
@@ -858,7 +868,6 @@ int model::sampling(int m, int n) {
     nd[m][topic] += 1;
     nwsum[topic] += 1;
     ndsum[m] += 1;
-    
     return topic;
 }
 
@@ -878,9 +887,37 @@ void model::compute_phi() {
     }
 }
 
-// void model::compute_alpha () {
+void model::compute_alpha() {
+    int sum1 = 0, sum2 = 0;
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < M; j++) {
+            sum1 += digamma(nd[j][i] + alpha);
+        }
+    }
 
-// }
+    for (int j = 0; j < M; j++) {
+        sum2 += digamma(ndsum[j] + K * alpha);
+    }
+
+    alpha = alpha * (sum1 / K - M * digamma(alpha)) / (sum2 - M * digamma(K * alpha));
+    
+}
+
+void model::compute_beta() {
+    int sum1 = 0, sum2 = 0;
+
+    for (int i = 0; i < K; i++) {
+        for (int j = 0; j < V; j++) {
+            sum1 += digamma(nw[j][i] + beta);
+        }
+    }
+
+    for (int j = 0; j < K; j++) {
+        sum2 += digamma(nwsum[j] + V * beta);
+    }
+
+    beta = beta * (sum1 / V - K * digamma(beta)) / (sum2 - K * digamma(V * beta));
+}
 
 int model::init_inf() {
     // estimating the model from a previously estimated one
@@ -1059,8 +1096,9 @@ int model::inf_sampling(int m, int n) {
     newnwsum[topic] -= 1;
     newndsum[m] -= 1;
     
-    double Vbeta = V * beta;
     double Kalpha = K * alpha;
+    double Vbeta = V * beta;   
+    
     // do multinomial sampling via cumulative method
     for (int k = 0; k < K; k++) {
         p[k] = (nw[w][k] + newnw[_w][k] + beta) / (nwsum[k] + newnwsum[k] + Vbeta) *
@@ -1097,20 +1135,17 @@ void model::compute_newtheta() {
 }
 
 void model::compute_newphi() {
+
     map<int, int>::iterator it;
     for (int k = 0; k < K; k++) {
         for (int w = 0; w < newV; w++) {
             it = pnewdata->_id2id.find(w);
             if (it != pnewdata->_id2id.end()) {
-                newphi[k][w] = (nw[it->second][k] + newnw[w][k] + beta) / (nwsum[k] + newnwsum[k] + V * beta);
+                newphi[k][w] = (nw[it->second][k] + newnw[w][k] + beta) / (nwsum[k] + newnwsum[k] +  V * beta);
             }
         }
     }
 }
-
-// void  model::compute_newalpha() {
-
-// }
 
 int model::init_ranking() {
     if (load_model(model_name)) {
@@ -1168,12 +1203,37 @@ void model::ranking() {
         cout << " =============== " << p[i].first << " =============== " << endl;
         db.preciseFetch(p[i].first);
     }
+}
 
-    classification();
+vector<int> model::ranking(vector<int> candidate) {
+    // candidate: int - number
+    database db;
+    vector<pair<int,double> > p;
+    vector<vector<int> > all;
+
+    for (vector<int>::size_type k = 0; k < candidate.size(); k++) {
+        p.clear();
+        for (int i = 0; i < M; ++i) {
+            double tmp = 0;
+            if (candidate[k] == i) { 
+            p.push_back(pair<int, double>(i, 0.0));  
+            continue;
+            }
+            for (int j = 0; j < K; ++j) {
+                tmp += theta[i][j]*ndsum[i]*theta[candidate[k]][j]/nwsum[j];
+            }
+            p.push_back(pair<int, double>(i,tmp));
+        }
+        utils::quicksort(p, 0, p.size()-1);
+        for (int i = 0; i < N_RANKING; i++) {
+            all[k].push_back(p[i].first);
+        }
+    }
+
+    return utils::findCommon(all, candidate.size(), M);
 }
 
 void model::classification() {
-    init_ranking();
     vector<pair<int,double> > p;
 
     for (int i = 0; i < M; i++) {
@@ -1185,5 +1245,3 @@ void model::classification() {
         p.clear();
     }
 }
-
-

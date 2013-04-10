@@ -3,6 +3,39 @@
 using namespace std;
 using namespace boost;
 
+void utils::show_help() {
+    cout << "Command line usage:" << endl;
+    cout << "\t" << "lda -server -disp <int> -dir <string> -model <string>" << endl;
+    cout << '\t' << "lda -pprocess <string> <int>" << endl;
+    cout << '\t' << "lda -est -alpha <double> -beta <double> -ntopics <int> -niters <int> -savestep <int> -twords <int> -dfile <string>" << endl;
+    cout << '\t' << "lda -estc -dir <string> -model <string> -niters <int> -savestep <int> -twords <int>" << endl;
+    cout << '\t' << "lda -inf -dir <string> -model <string> -niters <int> -twords <int> -dfile <string>" << endl;
+    cout << '\t' << "lda -ranking <int> -disp <int> -dir <string> -model <string>" << endl;
+    cout << '\t' << "lda -class -dir model -model model-final" << endl;
+}
+
+vector<int> utils::findCommon(vector<vector<int> >& all, int size, int M) {
+    vector<pair<int,double> > record;
+    vector<int> p;
+    for (int i = 0; i < M; i++) {
+        record.push_back(pair<int,double>(i, 0.0));
+    }
+
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < M; j++) {
+            record[all[i][j]].second += exp(-j);
+        }
+    }
+    utils::quicksort(record, 0, record.size()-1);
+
+    for (int i = 0; i < M; i++) {
+        if (record[i].second > 0.00000001) {
+            p.push_back(record[i].first);
+        }
+    }
+    return p;
+}
+
 double utils::stod(const string& str) {
     double num = 0;
     int n = 0;
@@ -26,35 +59,39 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
     ifstream fin;
     string str;
     fin.open(ofile.c_str(), ifstream::in);
+    strtokenizer tok;
 
     if (!fin.is_open()) {
         cout << "Cannot open file " << ofile << " to read!" << endl;
         return;
     }  
-    boost::regex re1("\'");
-    boost::regex re2("_");
-    string rep1 = "\'\'";
-    string rep2 = " ";
+    boost::regex re("\'");
+    string rep = "\'\'";
+    
+    tok.parse(ofile, "/\t\n\r");
+    //cout << ofile << endl;
+    assert(tok.count_tokens() == 4);
+    strtok.addToken(tok.token(1)); // M or TV
+    strtok.addToken(tok.token(2)); // category
 
     while (!fin.eof()) {
         getline(fin, str);
-        str = regex_replace(str, re1, rep1, boost::match_default | boost::format_all);
+        str = regex_replace(str, re, rep, boost::match_default | boost::format_all);
 
-        if (strtok.count_tokens() == 0) {
-            str = regex_replace(str, re2, rep2, boost::match_default | boost::format_all);
-            strtok.addToken(str);
+        if (strtok.count_tokens() == 2) {
+            strtok.addToken(str); // title
         } else if (str.find("Released Year:") == 0) {
-            strtok.addToken(str.substr(15));
+            strtok.addToken(str.substr(15)); // year
         } else if (str.find("Running time:") == 0) {
-            strtok.addToken(str.substr(14));
+            strtok.addToken(str.substr(14)); // length
         } else if (str.find("Director:") == 0) {
-            strtok.addToken(str.substr(10));
+            strtok.addToken(str.substr(10)); // director
         } else if (str.find("Cast:") == 0) {
-            strtok.addToken(str.substr(6));
+            strtok.addToken(str.substr(6)); // cast
         } else if (str.find("Content:") == 0) {
-            strtok.addToken(str.substr(9));
+            strtok.addToken(str.substr(9)); // content
         } else if (str.find("Wiki info:") == 0 || str == "") {
-            continue;
+            continue; // wiki
         } else {
             strtok.addToken(str);
         }
@@ -185,7 +222,7 @@ void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, vector<pa
     return;
 }
 
-int utils::parse_args(int argc, char ** argv, model * pmodel) {
+int utils::parse_args(int argc, char ** argv, model * pmodel, int & port) {
     int model_status = MODEL_STATUS_UNKNOWN;
     string dir = "";
     string model_name = "";
@@ -201,7 +238,7 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
     int withrawdata = 0;
     int file_type = 0;
     int rank_num = 1;
-    int disp = 10;
+    int disp = 12;
     
     int i = 0;
     while (i < argc) {
@@ -211,9 +248,9 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
 	    	model_status = MODEL_STATUS_EST;
             
 		} else if (arg == "-estc") {
-	    	model_status = MODEL_STATUS_ESTC;
+            model_status = MODEL_STATUS_ESTC;
             
-		} else if (arg == "-inf") {
+        } else if (arg == "-inf") {
 	    	model_status = MODEL_STATUS_INF;
             
 		} else if (arg == "-dir") {
@@ -229,7 +266,7 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
 	    	alpha = atof(argv[++i]);
             
 		} else if (arg == "-beta") {
-	    	beta = atof(argv[++i]);
+            beta = atof(argv[++i]);
             
 		} else if (arg == "-ntopics") {
 	    	K = atoi(argv[++i]);
@@ -257,12 +294,25 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
 
         } else if (arg == "-disp") {
             disp = atoi(argv[++i]);
-        }
 
-        else {
-	    	// any more?
+        } else if (arg == "-class") {
+            model_status = MODEL_STATUS_CLASSIFIER;
+
+        } else if (arg == "-help") {
+            model_status = MODEL_STATUS_UNKNOWN;
+        } else if (arg == "-server") {
+            model_status = MODEL_STATUS_SERVER;
+            port = atoi(argv[++i]);
+        } else{
+            model_status = MODEL_STATUS_UNKNOWN;
 		}
 		i++;
+    }
+
+    if (model_status == MODEL_STATUS_SERVER) {
+        if (port == 0) {
+            port = PORT;
+        }
     }
     
     if (model_status == MODEL_STATUS_EST) {
@@ -280,12 +330,13 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
 		if (alpha >= 0.0) {
 	    	pmodel->alpha = alpha;
 		} else {
-            // default value for alpha
-            pmodel->alpha = 50.0 / pmodel->K;
+            pmodel->alpha = 50.0 / K;
         }
         
         if (beta >= 0.0) {
             pmodel->beta = beta;
+        } else {
+            pmodel->beta = 0.1;
         }
         
         if (niters > 0) {
@@ -312,7 +363,7 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
             cout << "dfile =" << pmodel->dfile.c_str() << endl;
         }
     }
-    
+
     if (model_status == MODEL_STATUS_ESTC) {
         if (dir == "") {
             cout << "Please specify model directory!" << endl;
@@ -433,6 +484,51 @@ int utils::parse_args(int argc, char ** argv, model * pmodel) {
             return 1;
         }
     }
+
+    if (model_status == MODEL_STATUS_CLASSIFIER) {
+        pmodel->model_status = model_status;
+
+        if (dir == "") {
+            cout << "Please specify model directory please!" << endl;
+            return 1;
+        }
+        
+        if (model_name == "") {
+            cout << "Please specify model name for inference!" << endl;
+            return 1;
+        }
+        if (dir[dir.size() - 1] != '/') {
+            dir += "/";
+        }
+        pmodel->dir = dir;
+        pmodel->model_name = model_name;
+        if (read_and_parse(pmodel->dir + pmodel->model_name + pmodel->others_suffix, pmodel)) {
+            return 1;
+        }
+    }
+
+    if (model_status == MODEL_STATUS_SERVER) {
+        pmodel->disp = disp;
+        pmodel->model_status = model_status;
+
+        if (dir == "") {
+            cout << "Please specify model directory please!" << endl;
+            return 1;
+        }
+        
+        if (model_name == "") {
+            cout << "Please specify model name for inference!" << endl;
+            return 1;
+        }
+        if (dir[dir.size() - 1] != '/') {
+            dir += "/";
+        }
+        pmodel->dir = dir;
+        pmodel->model_name = model_name;
+        if (read_and_parse(pmodel->dir + pmodel->model_name + pmodel->others_suffix, pmodel)) {
+            return 1;
+        }
+    }
     
     if (model_status == MODEL_STATUS_UNKNOWN) {
         cout << "Please specify the task you would like to perform (-est/-estc/-inf/-preprocess)!" << endl;
@@ -473,10 +569,10 @@ int utils::read_and_parse(string filename, model * pmodel) {
         
         if (optstr == "alpha") {
             pmodel->alpha = atof(optval.c_str());
-            
+
         } else if (optstr == "beta") {
             pmodel->beta = atof(optval.c_str());
-            
+
         } else if (optstr == "ntopics") {
             pmodel->K = atoi(optval.c_str());
             
@@ -493,13 +589,13 @@ int utils::read_and_parse(string filename, model * pmodel) {
             assert((int)strtok.count_tokens() == pmodel->K+1);
             pmodel->nwsum = new int[pmodel->K];
             for (int i = 0; i < pmodel->K; ++i) {
-                pmodel->nwsum[i] = atoi(&(strtok.token(i+1)[0]));
+                pmodel->nwsum[i] = atoi(strtok.token(i+1).c_str());
             }
         } else if (optstr == "ndsum") {
             assert((int)strtok.count_tokens() == pmodel->M+1);
             pmodel->ndsum = new int[pmodel->M];
             for (int i = 0; i < pmodel->M; ++i) {
-                pmodel->ndsum[i] = atoi(&(strtok.token(i+1)[0]));
+                pmodel->ndsum[i] = atoi(strtok.token(i+1).c_str());
             }
         } else {
             // any more?

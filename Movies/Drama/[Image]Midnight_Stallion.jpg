@@ -1,9 +1,0 @@
-<html><head><title>Apache Tomcat/5.5.27 - Error report</title><style><!--H1 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:22px;} H2 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:16px;} H3 {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;font-size:14px;} BODY {font-family:Tahoma,Arial,sans-serif;color:black;background-color:white;} B {font-family:Tahoma,Arial,sans-serif;color:white;background-color:#525D76;} P {font-family:Tahoma,Arial,sans-serif;background:white;color:black;font-size:12px;}A {color : black;}A.name {color : black;}HR {color : #525D76;}--></style> </head><body><h1>HTTP Status 500 - </h1><HR size="1" noshade="noshade"><p><b>type</b> Exception report</p><p><b>message</b> <u></u></p><p><b>description</b> <u>The server encountered an internal error () that prevented it from fulfilling this request.</u></p><p><b>exception</b> <pre>javax.servlet.ServletException: Unable to connect to ImageServer: '' {}: Failed to create new connection to ImageServer: '' {port=27345, host=localhost}: Connection refused
-	com.scene7.is.ps.web.ErrorInterceptorBean.getTextResponse(ErrorInterceptorBean.java:422)
-	com.scene7.is.ps.web.ErrorInterceptorBean.getPSResponse(ErrorInterceptorBean.java:174)
-	com.scene7.is.ps.web.PlatformServerServlet.doGet(PlatformServerServlet.java:81)
-	javax.servlet.http.HttpServlet.service(HttpServlet.java:627)
-	javax.servlet.http.HttpServlet.service(HttpServlet.java:729)
-	org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:63)
-	org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:75)
-</pre></p><p><b>note</b> <u>The full stack trace of the root cause is available in the Apache Tomcat/5.5.27 logs.</u></p><HR size="1" noshade="noshade"><h3>Apache Tomcat/5.5.27</h3></body></html>

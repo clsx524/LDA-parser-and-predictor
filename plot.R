@@ -1,0 +1,1 @@
+setwd("/Users/eric/Dropbox/GitHub/LDA-parser-and-predictor/model")Y <- read.table("alpha.txt", head = FALSE)plot (Y[,1], col = "red")plot (Y[,2], col = "blue")

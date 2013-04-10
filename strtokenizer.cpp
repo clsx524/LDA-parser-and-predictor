@@ -84,7 +84,7 @@ string strtokenizer::stopword_remover(string str) {
 
 string strtokenizer::verify(string str) {
     for (string::size_type i = 0; i < str.size(); ++i) {
-        if (toascii(str[i]) > 127) {
+        if (toascii(str[i]) > 127 || toascii(str[i]) < 0) {
             str.erase(i);
         } else if (isalpha(str[i])) {
             str[i] = tolower(str[i]);
@@ -231,7 +231,6 @@ bool strtokenizer::ends(string s) {
     if (s[s.size()-1] != b[b.size()-1]) return false; /* tiny speed-up */
     if (s.size() > (z->str).size()) return false;
     if ((z->str).substr(k-length,length).compare(s) != 0) return false;
-    //if (memcmp(b + k - length + 1, s + 1, length) != 0) return false;
     z->j = k-length-1;
     return true;
 }
@@ -241,7 +240,6 @@ bool strtokenizer::ends(string s) {
 void strtokenizer::setto(string s) {
     int j = z->j;
     z->str = (z->str).substr(0, j+1).append(s);
-    //memmove(b + j + 1, s + 1, length);
 }
 
 /* r(s) is used further down. */

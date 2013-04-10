@@ -11,8 +11,8 @@ data: database.o utils.o strtokenizer.o data.cpp
 	$(CC) $(CCFLAGS) -o data data.cpp database.o utils.o strtokenizer.o $(MYSQL) $(BOOST) -lm 
 	strip data
 
-lda: dataset.o strtokenizer.o utils.o model.o database.o lda.cpp
-	$(CC) $(CCFLAGS) -o lda lda.cpp dataset.o strtokenizer.o utils.o model.o database.o $(MYSQL) $(BOOST) -lm
+lda: dataset.o strtokenizer.o utils.o model.o database.o transmit.o socket.o lda.cpp
+	$(CC) $(CCFLAGS) -o lda lda.cpp dataset.o strtokenizer.o utils.o model.o database.o transmit.o socket.o $(MYSQL) $(BOOST) -lm
 	strip lda
 
 strtokenizer.o:	strtokenizer.h strtokenizer.cpp
@@ -29,6 +29,12 @@ model.o:	model.h model.cpp
 
 database.o: database.h database.cpp
 	$(CC) $(CCFLAGS) -c database.cpp
+
+transmit.o: transmit.h transmit.cpp
+	$(CC) $(CCFLAGS) -c transmit.cpp
+
+socket.o: socket.h socket.cpp
+	$(CC) $(CCFLAGS) -c socket.cpp
 
 test:
 

@@ -1,6 +1,7 @@
 #include "database.h"
 #include "utils.h"
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -39,10 +40,31 @@ int main(int argc, char ** argv) {
     //     return 1;
     // }
 
-    data.initDatabase();
-    //cout << data.search(path) << endl;
+    //data.initDatabase();
+    // vector<pair<int, string> > ans = data.search("life", 10, 0);
+    // for (vector<pair<int, string> >::size_type i = 0; i < ans.size(); i++) {
+    //     cout << ans[i].first << " " << ans[i].second << endl;
+    // }
     //cout << data.changePassword(u,p,path);
-    //cout << data.preciseFetch(43);
+
+    // vector<string> ans = data.preciseFetch(430);
+    // for (vector<string>::size_type i = 0; i < ans.size(); i++) {
+    //     cout << ans[i] << endl;
+    // }   
+
+    //cout << data.fetchPic(1212) << endl;
+
+    // vector<pair<int, string> > ans = data.fetchLatest(10);
+    // for (vector<pair<int, string> >::size_type i = 0; i < ans.size(); i++) {
+    //     cout << ans[i].first << " " << ans[i].second << endl;
+    // }   
+
+    //vector<int> ans = data.hotTypeCollect("xin", 10, "TV");
+    // vector<int> ans = data.FavoriteCollect("xin", 10);
+    // for (vector<int>::size_type i = 0; i < ans.size(); i++) {
+    //     cout << ans[i] << endl;
+    // } 
+    cout << data.addComment("xin", 123, "good", 1, 5) << endl;
 
     return 0;
 }

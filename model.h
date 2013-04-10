@@ -10,8 +10,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
+#include <boost/math/special_functions/digamma.hpp>
 
 using namespace std;
+using namespace boost::math;
 
 // LDA model
 class model {
@@ -36,10 +38,12 @@ public:
     int model_status;		// model status:
 				            // MODEL_STATUS_UNKNOWN: unknown status
 				            // MODEL_STATUS_EST: estimating from scratch
-				            // MODEL_STATUS_ESTC: continue to estimate the model from a previous one
+                            // MODEL_STATUS_ESTC: continue to estimate the model from a previous one
 				            // MODEL_STATUS_INF: do inference
                             // MODEL_STATUS_PREPROCESS: preprocess texts
                             // MODEL_STATUS_RANKING: ranking
+                            // MODEL_STATUS_CLASSIFIER
+                            // MODEL_STATUS_SERVER
 
     dataset * ptrndata;	    // pointer to training dataset object
     dataset * pnewdata;     // pointer to new dataset object
@@ -89,12 +93,9 @@ public:
     
     // set default values for variables
     void set_default_values();   
-
-    // parse command line to get options
-    int parse_args(int argc, char ** argv);
     
     // initialize the model
-    int init(int argc, char ** argv);
+    int init();
     int textpreprocessor();
     
     // load LDA model to continue estimating or to do inference
@@ -129,6 +130,8 @@ public:
     int sampling(int m, int n);
     void compute_theta();
     void compute_phi();
+    void compute_alpha();
+    void compute_beta();
     
     // init for inference
     int init_inf();
@@ -142,6 +145,7 @@ public:
 
     int init_ranking();
     void ranking();
+    vector<int> ranking(vector<int> candidate);
 
     void classification();
 };

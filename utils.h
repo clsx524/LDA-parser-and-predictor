@@ -14,6 +14,7 @@
 #include <boost/regex.hpp>
 #include "strtokenizer.h"
 #include "model.h"
+#include "transmit.h"
 
 using namespace std;
 
@@ -22,7 +23,7 @@ class model;
 class utils {
 public:
     // parse command line arguments
-    static int parse_args(int argc, char ** argv, model * pmodel);
+    static int parse_args(int argc, char ** argv, model * pmodel, int& port);
     
     // read and parse model parameters from <model_name>.others
     static int read_and_parse(string filename, model * model); 
@@ -30,8 +31,10 @@ public:
     // generate the model name for the current iteration
     // iter = -1 => final model
     static string generate_model_name(int iter); 
+    static vector<int> findCommon(vector<vector<int> >& all, int size, int M);
 
     static double stod(const string& str); 
+    static void show_help();
     
     // sort    
     static pair<int, double> quicksort_wr(vector<pair<int, double> > vect, int left, int right);
