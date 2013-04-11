@@ -19,7 +19,7 @@ bool database::initDatabase() {
     cout << "#Starting add files ... " << endl;
     vector<string> pathset;
     strtokenizer strtok;
-    boost::regex re("_"); string rep = " ", str;
+    
     vector<string>::size_type size = 0;
     utils::addfile(path, pathset, size);
     
@@ -30,18 +30,18 @@ bool database::initDatabase() {
         	pathPic = pathset[i].substr(0, pathset[i].find_last_of("/"));
         	sql.str("");
         	sql << "INSERT INTO media_info (title, category, year, length, director, cast, content, wiki, pic, type) VALUES ('";
-        	str = regex_replace(strtok.token(2), re, rep, boost::match_default | boost::format_all);
-        	sql << str << "', '"; // title
+        	
+        	sql << strtok.token(2) << "', '"; // title
         	sql << strtok.token(1) << "', '"; // category
         	sql << strtok.token(3) << "', "; // year
         	sql << strtok.token(4) << ", '";  // length
         	sql << strtok.token(5) << "', '"; // director
         	sql << strtok.token(6) << "', '"; // cast
         	sql << strtok.token(7) << "', '"; // content
-        	for (vector<string>::size_type i = 8; i < strtok.count_tokens(); i++) {
+        	for (vector<string>::size_type i = 8; i < strtok.count_tokens()-1; i++) {
             	sql << strtok.token(i);
         	}
-        	sql << "', '" << pathPic << "/[Image]" << strtok.token(2) << ".jpg', '";
+        	sql << "', '" << pathPic << "/[Image]" << strtok.token(strtok.count_tokens()-1) << ".jpg', '";
         	sql << strtok.token(0) << "')";  // M or TV
         	stmt->execute(sql.str());
         	strtok.clear();
@@ -132,16 +132,16 @@ bool database::changePassword(const string& name, const string& origin, const st
 	return true;
 }
 
-vector<pair<int, string> > database::search(const string& query, int num, int pos) const {
+vector<int> database::search(const string& query, int num, int pos) const {
 	int row = 0;
 	stringstream sql;
-	vector<pair<int, string> > p;
+	vector<int> p;
 	try {
 		auto_ptr<Connection> con(driver->connect(url, user, password));
 		auto_ptr<Statement> stmt(con->createStatement());
 
 		stmt->execute("USE " + db);
-		sql << "SELECT title, director, number, pic FROM media_info WHERE title LIKE \"";
+		sql << "SELECT title, director, number FROM media_info WHERE title LIKE \"";
 		sql << query << "%\" OR title LIKE \"%" << query << "\" OR director LIKE \"";
 		sql << query << "%\" OR director LIKE \"%" << query << "\"";
 		cout << sql.str() << endl;
@@ -149,7 +149,7 @@ vector<pair<int, string> > database::search(const string& query, int num, int po
 		cout << "#\t Fetching search for " << query << endl;
 		row = pos;
 		while (res->next()) {
-			p.push_back(pair<int, string>(res->getInt("number"),res->getString("title")));
+			p.push_back(res->getInt("number"));
 			row++;
 		}
 		stmt.reset(NULL);
@@ -179,7 +179,8 @@ vector<string> database::preciseFetch(int index) const {
 			arg.push_back(res->getString("cast"));
 			arg.push_back(res->getString("content"));
 			arg.push_back(res->getString("wiki"));
-			arg.push_back(res->getString("pic"));
+			string pic = res->getString("pic");
+			arg.push_back(pic.substr(pic.find_last_of("/")+1));
 			arg.push_back(res->getString("number"));
 		} 
 		stmt.reset(NULL);
@@ -190,44 +191,46 @@ vector<string> database::preciseFetch(int index) const {
 	return arg;	
 }
 
-string database::fetchPic(int index) {
+vector<string> database::fetchPic(int index) {
 	stringstream out;
+	vector<string> info;
 	try {
 		auto_ptr<Connection> con(driver->connect(url, user, password));
 		auto_ptr<Statement> stmt(con->createStatement());
 
 		stmt->execute("USE " + db);
-		out << "SELECT pic, number FROM media_info WHERE number=" << index;
+		out << "SELECT pic, number, title FROM media_info WHERE number=" << index;
 		std::auto_ptr<ResultSet> res(stmt->executeQuery(out.str()));
 		cout << "# Fetching search for " << index << endl;
 		if (res->next()) {
-			return res->getString("pic");
+			info.push_back(res->getString("number"));
+			info.push_back(res->getString("title"));
+			info.push_back(res->getString("pic"));
 		} else {
-			return NULL;
+			throw sql::SQLException("fetch error");
 		}
 		stmt.reset(NULL);
 	} catch (sql::SQLException &e) {
 		cout << "#Error: " << e.what() << " (MySQL error code: " << e.getErrorCode();
 		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
-		return NULL;
 	}
-	return NULL;	
+	return info;	
 }
 
-vector<pair<int, string> > database::fetchLatest(int num) {
+vector<int> database::fetchLatest(int num) {
 	int row = 0;
 	stringstream out;
-	vector<pair<int, string> > p;
+	vector<int> p;
 	try {
 		auto_ptr<Connection> con(driver->connect(url, user, password));
 		auto_ptr<Statement> stmt(con->createStatement());
 
 		stmt->execute("USE " + db);
-		out << "SELECT year, number, pic FROM media_info ORDER BY year DESC";
+		out << "SELECT year, number FROM media_info ORDER BY year DESC";
 		std::auto_ptr<ResultSet> res(stmt->executeQuery(out.str()));
 		row = 0;
 		while (res->next()) {
-			p.push_back(pair<int, string>(res->getInt("number"), res->getString("pic")));
+			p.push_back(res->getInt("number"));
 			row++;
 			if (row == num) { break; } 
 		} 
@@ -309,6 +312,43 @@ vector<int> database::hotTypeCollect(string username, int num, string type) {
 	return p;
 }
 
+vector<int> database::hotTypeCollectWithType(string username, int num, string type, string category) {
+	int row = 0;
+	stringstream out;
+	vector<int> p;
+	try {
+		auto_ptr<Connection> con(driver->connect(url, user, password));
+		auto_ptr<Statement> stmt(con->createStatement());
+
+		stmt->execute("USE " + db);
+		out << "SELECT username, favorite, score, number, type, category FROM comments WHERE favorite=1 AND type='" << type << "' AND category='" << category << "' ORDER BY score DESC";
+		std::auto_ptr<ResultSet> res(stmt->executeQuery(out.str()));
+		row = 0;
+		while (res->next()) {
+			p.push_back(res->getInt("number"));
+			row++;
+			if (row == num) { break; }
+		}
+		if (p.empty()) {
+			out.str("");
+			out << "SELECT year, number, type, category FROM media_info WHERE type='" << type << "' ORDER BY year DESC";
+			std::auto_ptr<ResultSet> res(stmt->executeQuery(out.str()));
+			row = 0;
+			while (res->next()) {
+				p.push_back(res->getInt("number"));
+				row++;
+				if (row == num) { break; } 
+			} 
+		}
+
+		stmt.reset(NULL);
+	} catch (sql::SQLException &e) {
+		cout << "#Error: " << e.what() << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	return p;
+}
+
 vector<int> database::FavoriteCollect(string username, int num) {
 	int row = 0;
 	vector<int> p;
@@ -333,7 +373,6 @@ vector<int> database::FavoriteCollect(string username, int num) {
 }
 
 bool database::addComment(string username, int number, string comment, bool favor, int score) {
-
 	stringstream msg;
 	try {
 		auto_ptr<Connection> con(driver->connect(url, user, password));
@@ -348,8 +387,9 @@ bool database::addComment(string username, int number, string comment, bool favo
     		stmt->execute(msg.str());
     	} else {
     		msg.str("");
-    		msg << "INSERT INTO comments (username, number, comments, favorite, score) VALUES (";
-    		msg << "'" << username << "', '" << number << "', '" << comment << "', " << favor << ", '" << score << "')";
+    		pair<string,string> cat = getInfo("media_info", number);
+    		msg << "INSERT INTO comments (username, number, comments, favorite, score, type, category) VALUES (";
+    		msg << "'" << username << "', '" << number << "', '" << comment << "', " << favor << ", '" << score << "', '" << cat.first << "', '" << cat.second << "')";
     		stmt->execute(msg.str());
     	}
     	stmt.reset(NULL);
@@ -359,4 +399,25 @@ bool database::addComment(string username, int number, string comment, bool favo
 		return false;
 	}
 	return true;
+}
+
+pair<string,string> database::getInfo(string table, int number) {
+	stringstream out;
+	string str;
+	try {
+		auto_ptr<Connection> con(driver->connect(url, user, password));
+		auto_ptr<Statement> stmt(con->createStatement());
+
+		stmt->execute("USE " + db);
+		out << "SELECT number,type,category FROM " << table << " WHERE number=" << number;
+		std::auto_ptr<ResultSet> res(stmt->executeQuery(out.str()));
+		if (res->next()) {
+			return pair<string,string>(res->getString("type"),res->getString("category"));
+		} 
+		stmt.reset(NULL);
+	} catch (sql::SQLException &e) {
+		cout << "#Error: " << e.what() << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	return pair<string,string>("","");
 }

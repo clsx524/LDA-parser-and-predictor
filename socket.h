@@ -10,6 +10,7 @@
 #include <errno.h> 
 #include <string>
 #include <arpa/inet.h>
+#include <exception>
 #include "constants.h"
 
 using namespace std;
@@ -54,7 +55,7 @@ public:
 
     ~socket() {
         if (is_valid())
-            close(sockfd);
+            ::close(sockfd);
     }
     
     // Server initialization
@@ -63,10 +64,10 @@ public:
     bool socketListen() const;
     bool socketAccept(socket& sock) const;
     
-    // // Client initialization
-    // bool connect();
+    // Client initialization
+    bool connect();
     
-    // Data Transimission
+    // Data Transmission
     bool send (const string& str) const;
     bool send(char *block, int length) const;
     int recv (string& str) const;
@@ -80,8 +81,18 @@ public:
         addr.sin_port = htons(p);
     }
 
-    // string getLocalAddress();
+    void close();
 };
 
+class SocketException : public exception {
+private:
+  string userMessage;  // Exception message
+public:
+  SocketException(const string &message, bool inclSysMsg = false) throw ();
+
+  ~SocketException() throw () {}
+
+  const char *what() const throw ();
+};
 
 #endif

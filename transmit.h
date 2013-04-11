@@ -28,11 +28,11 @@ class transmit : private socket {
 public:    
     transmit(const int port) : socket(port) {
         if (!socket::socketEstablish()) 
-            cout << "error1" << endl;
+            throw SocketException("Could not create server socket");
         if (!socket::socketBind()) 
-            cout << "error2" << endl;
+            throw SocketException("Could not bind to port");
         if (!socket::socketListen())  
-            cout << "error3" << endl;           
+            throw SocketException("Could not listen to socket");          
     }
     transmit() {}
     ~transmit() {}
@@ -40,9 +40,9 @@ public:
     const transmit& operator << (const string& str) const;
     const transmit& operator >> (string& str) const;
     
-    bool accept(transmit& clt);
+    void accept(transmit& clt);
 
-    void SendFile(string filename, string number);
+    void SendFile(const vector<string>& info);
 
     void SendStruct(vector<string>& arg);
 
@@ -51,6 +51,8 @@ public:
     void setPort(int p) {
         socket::setPort(p);
     }
+
+    void close();
     
 };
 

@@ -3,7 +3,7 @@ CCFLAGS = -pedantic -Wall -Werror -g -O3
 
 MYSQL =  -L/usr/local/zend/mysql/lib  -L/Users/eric/Dropbox/sources/mysql-connector-c++-1.1.2/cppconn -L/Users/eric/Dropbox/sources/mysql-connector-c++-1.1.2/driver /Users/eric/Dropbox/sources/mysql-connector-c++-1.1.2/driver/libmysqlcppconn-static.a -lmysqlclient_r -lpthread
 
-BOOST = /usr/local/lib/libboost_regex-mt.a
+BOOST = -lboost_regex-mt -lboost_thread-mt -lboost_system-mt
 
 all: lda data
 

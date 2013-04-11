@@ -16,3 +16,6 @@ LDA parser and predictor
 
 ## classification
 	./lda -class -dir model -model model-final
+	
+## server
+	./lda -server 6000 -disp 12 -dir model -model model-final -niters 5 -twords 20 -dfile model/predata.txt

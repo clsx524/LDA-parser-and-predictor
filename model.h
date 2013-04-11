@@ -146,6 +146,7 @@ public:
     int init_ranking();
     void ranking();
     vector<int> ranking(vector<int> candidate);
+    vector<int> ranking(vector<int> candidate, string type);
 
     void classification();
 };

@@ -17,18 +17,18 @@
 #define BUFFSIZE 4096
 #define FILE_NAME_MAX_SIZE 512
 #define WORD_MAX_SIZE 64
-#define RCVBUFSIZE 32
 
 struct MovieData {
-	char name[30];
+	char name[100];
 	char year[10];
 	char length[10];
 	char director[30];
-	char cast[100];
+	char cast[500];
+	char pic[200];
+	char number[20];
 	char content[10000];
 	char wiki[10000];
 };
-typedef struct MovieData MD, _MD;
 
 #endif
 

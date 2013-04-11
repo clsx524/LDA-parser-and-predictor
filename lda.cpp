@@ -5,26 +5,21 @@
 
 using namespace std;
 
-// void HandleTCPClient(TCPSocket *sock);     // TCP client handling function
-// void *ThreadMain(void *arg);               // Main program of a thread
-
-void operation(model& lda, transmit * client) {
+void operation(transmit& sv, model& lda, transmit * client) {
     strtokenizer cmd;
     database db;
     string command;
-    cout << "here" << endl;
-    while(1) {    
-        cmd.clear();
+    cout << "here1" << endl;
+    try { 
         *client >> command;
         cout << command << endl;
-
         cmd.parse(command, "*_*");
-        assert(cmd.count_tokens() != 0);
+
         string operation = cmd.token(0);
 
         //1. createuser + username + password, e.g. createuser*_*jianan*_*123456    response: Success! or Fail!
         //2. login + username + password, e.g. login*_*jianan*_*123456              response: Success! or Fail!
-        //3. changeuser + username + password, e.g. login*_*jianan*_*12345678       response: Success! or Fail!
+        //3. changeuser + username + old + password, e.g. login*_*jianan*_*12345678       response: Success! or Fail!
         if(operation == "createuser"){
             assert(cmd.count_tokens() == 3);
             bool ans = db.addUser(cmd.token(1),cmd.token(2));
@@ -41,7 +36,7 @@ void operation(model& lda, transmit * client) {
             } else {
                 *client << "Fail"; 
             }
-        }else if(operation == "changeuser"){
+        } else if(operation == "changeuser"){
             assert(cmd.count_tokens() == 4);
             bool ans = db.changePassword(cmd.token(1), cmd.token(2), cmd.token(3));
             if (ans) {
@@ -53,72 +48,107 @@ void operation(model& lda, transmit * client) {
         //4. display + username + interfacename + category + movie or TV show, e.g. display*_*jianan*_*main*_*action
         //   display + number + interface
         else if(operation == "display"){
-            assert(cmd.count_tokens() == 4);
+            assert(cmd.count_tokens() >=3);
             string interface = cmd.token(2);
 
             if(interface == "main"){
+                assert(cmd.count_tokens() == 3);
                 /*functions for finding 12 hotest films or TV shows*/
-                vector<int> col = db.hotCollect(cmd.token(1), N_DISP);
+                vector<int> col = db.hotCollect(cmd.token(1), 10);
                 vector<int> can = lda.ranking(col);
-                stringstream out;
+                    
                 for (int i = 0; i < N_DISP; i++) {
-                    out << can[i];
-                    client->SendFile(db.fetchPic(can[i]), out.str());
-                    out.str("");
+                    sv.accept(*client);
+                    vector<string> info = db.fetchPic(can[i]);
+                    // info[0] - number ; info[1] - name ; info[2] - picname
+                    client->SendFile(info);
+                    client->close();
                 }
-            } else if(interface == "what's new"){
+            } else if(interface == "new"){
+                assert(cmd.count_tokens() == 3);
                 /*functions for finding 12 lastest films or TV shows*/
-                vector<pair<int, string> > late = db.fetchLatest(N_DISP);
-                stringstream out;
+                vector<int> late = db.fetchLatest(N_DISP);
                 for (int i = 0; i < N_DISP; i++) {
-                    out << late[i].first;
-                    client->SendFile(late[i].second, out.str());
-                    out.str("");
+                    sv.accept(*client);
+                    vector<string> info = db.fetchPic(late[i]);
+                    client->SendFile(info);
+                    client->close();
                 }
-            } else if(interface == "movies"){
+            } else if(interface == "movies" && cmd.count_tokens() == 3){
                 /*functions for finding 12 random films*/
                 vector<int> col = db.hotTypeCollect(cmd.token(1), N_DISP, "Movies");
                 vector<int> can = lda.ranking(col);
-                stringstream out;
                 for (int i = 0; i < N_DISP; i++) {
-                    out << can[i];
-                    client->SendFile(db.fetchPic(can[i]), out.str());
-                    out.str("");
+                    sv.accept(*client);
+                    vector<string> info = db.fetchPic(can[i]);
+                    client->SendFile(info);
+                    client->close();
                 }
-            }else if(interface == "TV shows"){
+            } else if(interface == "movies" && cmd.count_tokens() == 4){
+                /*functions for finding 12 random films with category*/
+                vector<int> col = db.hotTypeCollectWithType(cmd.token(1), N_DISP, "Movies", cmd.token(3));
+                vector<int> can = lda.ranking(col, cmd.token(3));
+                for (int i = 0; i < N_DISP; i++) {
+                    sv.accept(*client);
+                    vector<string> info = db.fetchPic(can[i]);
+                    client->SendFile(info);
+                    client->close();
+                }
+            } else if(interface == "TV" && cmd.count_tokens() == 3){
                 /*functions for finding 12 random TV shows*/
                 vector<int> col = db.hotTypeCollect(cmd.token(1), N_DISP, "TV");
                 vector<int> can = lda.ranking(col);
-                stringstream out;
                 for (int i = 0; i < N_DISP; i++) {
-                    out << can[i];
-                    client->SendFile(db.fetchPic(can[i]), out.str());
-                    out.str("");
+                    sv.accept(*client);
+                    vector<string> info = db.fetchPic(can[i]);
+                    client->SendFile(info);
+                    client->close();
                 }
-            }else if(interface == "favourites"){
+            } else if(interface == "TV" && cmd.count_tokens() == 4){
+                /*functions for finding 12 random TV shows with category*/
+                vector<int> col = db.hotTypeCollectWithType(cmd.token(1), N_DISP, "TV", cmd.token(3));
+                vector<int> can = lda.ranking(col, cmd.token(3));
+                for (int i = 0; i < N_DISP; i++) {
+                    sv.accept(*client);
+                    vector<string> info = db.fetchPic(can[i]);
+                    client->SendFile(info);
+                    client->close();
+                }
+            } else if(interface == "favourites"){
+                assert(cmd.count_tokens() == 3);
                 /*functions for finding 12 favourites for user*/
                 vector<int> can = db.FavoriteCollect(cmd.token(1), N_DISP);
+                int num = can.size();
                 if (can.empty()) { 
                     *client << "Emtpy favourites";
-                    continue;
+                } else {
+                    for (int i = 0; i < num; i++) {
+                        sv.accept(*client);
+                        vector<string> info = db.fetchPic(can[i]);
+                        client->SendFile(info);
+                        client->close();
+                    }
                 }
-                stringstream out;
-                for (int i = 0; i < N_DISP; i++) {
-                    out << can[i];
-                    client->SendFile(db.fetchPic(can[i]), out.str());
-                    out.str("");
-                }
-            }else if(interface == "MTDetails"){
-                vector<string> arg = db.preciseFetch(atoi(cmd.token(1).c_str()));
+            } else if(interface == "MTDetails"){
+                //display + number + MTDetails
+                assert(cmd.count_tokens() == 3);
+                int i = atoi(cmd.token(1).c_str());
+                vector<string> arg = db.preciseFetch(i);
                 assert(arg.size() == 9);
                 client->SendStruct(arg);
+                client->close();
+                // send pic
+                sv.accept(*client);
+                vector<string> info = db.fetchPic(i);
+                client->SendFile(info);
+                client->close();
             }
         }        
         //5. changemovie + username + number + comments + rate(5 to 1) + favourite or not
-        //, e.g. changemovie*_*jianan*_*movie*_*metrix*_*this is awesome*_*5*_*1
+        //, e.g. changemovie*_*jianan*_*23*_*this is awesome*_*5*_*1
         //if something is missing, use blank " "
         else if (operation == "changemovie") {
-            string comments = cmd.token(6);
+            string comments = cmd.token(3);
             cout << "The comments is: " << comments << endl;
             bool ans = db.addComment(cmd.token(1), atoi(cmd.token(2).c_str()), cmd.token(3), atoi(cmd.token(5).c_str()), atoi(cmd.token(4).c_str()));
             if (ans) {
@@ -131,14 +161,19 @@ void operation(model& lda, transmit * client) {
         //default 10 pictures
         else if(operation == "search"){
             /*functions for finding 10 related movies*/
-            vector<pair<int, string> > p = db.search(cmd.token(2), 10, 0);
-            stringstream out;
-            for (int i = 0; i < N_DISP; i++) {
-                out << p[i].first;
-                client->SendFile(p[i].second, out.str());
-                out.str("");
+            assert(cmd.count_tokens() == 2);
+            cout << cmd.token(1)<< endl;
+            vector<int> p = db.search(cmd.token(1), 10, 0);
+            for (int i = 0; i < 10; i++) {
+                sv.accept(*client);
+                vector<string> info = db.fetchPic(p[i]);
+                client->SendFile(info);
+                client->close();
             }
-        }
+        } 
+    } catch (SocketException &) {
+        delete client;
+        return;
     }
 }
 
@@ -150,9 +185,7 @@ int main(int argc, char ** argv) {
         return 1;
     }
     
-    if (lda.model_status != MODEL_STATUS_SERVER) {
-        lda.init();
-    }
+    lda.init();
     
     if (lda.model_status == MODEL_STATUS_EST || lda.model_status == MODEL_STATUS_ESTC) {
         lda.estimate();
@@ -174,14 +207,17 @@ int main(int argc, char ** argv) {
         lda.classification();
     }
     
-    assert(lda.model_status == MODEL_STATUS_SERVER);
-    transmit sv(port);
-    while(1) {
-        transmit *client = new transmit();
-        sv.accept(*client);
-        operation(lda, client);
-        //boost::thread newThread(operation, client);
+    if (lda.model_status == MODEL_STATUS_SERVER) {
+        transmit sv(port);
+        while(1) {
+            cout << "again" << endl;
+            transmit *client = new transmit();
+            sv.accept(*client);
+            cout << "almost enter" << endl;
+            operation(sv, lda, client);
+            //boost::thread newThread(operation, client);
+        }
     }
-    
+
     return 0;
 }

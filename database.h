@@ -59,14 +59,16 @@ public:
 	bool addUser(const string& name, const string& pwd) const;
 	bool login(const string& name, const string& pwd) const;
 	bool changePassword(const string& name, const string& origin, const string& pwd) const;
-	vector<pair<int, string> > search(const string& query, int num, int pos) const;
+	vector<int> search(const string& query, int num, int pos) const;
 	vector<string> preciseFetch(int index) const;
-	string fetchPic(int index);
-	vector<pair<int, string> > fetchLatest(int num);
+	vector<string> fetchPic(int index);
+	vector<int> fetchLatest(int num);
 	vector<int> hotCollect(string username, int num);
 	vector<int> hotTypeCollect(string username, int num, string type);
+	vector<int> hotTypeCollectWithType(string username, int num, string type, string category);
 	vector<int> FavoriteCollect(string username, int num);
 	bool addComment(string username, int number, string comment, bool favor, int score);
+	pair<string,string> getInfo(string table, int number);
 };
 
 #endif

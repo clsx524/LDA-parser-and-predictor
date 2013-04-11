@@ -193,6 +193,11 @@ int model::init() {
             return 1;
         }
 
+    } else if (model_status == MODEL_STATUS_SERVER) {
+        if (init_ranking()) {
+            return 1;
+        }
+
     }
     return 0;
 }
@@ -1209,28 +1214,34 @@ vector<int> model::ranking(vector<int> candidate) {
     // candidate: int - number
     database db;
     vector<pair<int,double> > p;
-    vector<vector<int> > all;
+    vector<vector<int>*> all;
 
     for (vector<int>::size_type k = 0; k < candidate.size(); k++) {
+        vector<int>* part = new vector<int>();
+        //cout << candidate[k] << " " << k << " " << candidate.size() << endl;
         p.clear();
         for (int i = 0; i < M; ++i) {
             double tmp = 0;
             if (candidate[k] == i) { 
-            p.push_back(pair<int, double>(i, 0.0));  
-            continue;
+                p.push_back(pair<int, double>(i, 0.0));  
+                continue;
             }
             for (int j = 0; j < K; ++j) {
-                tmp += theta[i][j]*ndsum[i]*theta[candidate[k]][j]/nwsum[j];
+                tmp += theta[i][j] * ndsum[i] * theta[candidate[k]][j] / nwsum[j];
             }
             p.push_back(pair<int, double>(i,tmp));
         }
         utils::quicksort(p, 0, p.size()-1);
         for (int i = 0; i < N_RANKING; i++) {
-            all[k].push_back(p[i].first);
+            part->push_back(p[i].first);
         }
+        all.push_back(part);
     }
-
     return utils::findCommon(all, candidate.size(), M);
+}
+
+vector<int> model::ranking(vector<int> candidate, string type) {
+    return vector<int>();
 }
 
 void model::classification() {

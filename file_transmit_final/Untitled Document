@@ -1,0 +1,20 @@
+10.190.49.168
+
+createuser*_*jianan*_*123456
+createuser*_*michael*_*123456
+
+login*_*jianan*_*123456
+
+changeuser*_*jianan*_*123456*_*12345678
+
+display*_*xin*_*main*_*action
+
+display*_*xin*_*new
+
+display*_*xin*_*favourites
+
+display*_*122*_*MTDetails
+
+changemovie*_*jianan*_*23*_*this is awesome*_*5*_*1
+
+search*_*342

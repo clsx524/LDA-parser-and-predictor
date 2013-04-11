@@ -40,7 +40,7 @@ int main(int argc, char ** argv) {
     //     return 1;
     // }
 
-    //data.initDatabase();
+    data.initDatabase();
     // vector<pair<int, string> > ans = data.search("life", 10, 0);
     // for (vector<pair<int, string> >::size_type i = 0; i < ans.size(); i++) {
     //     cout << ans[i].first << " " << ans[i].second << endl;
@@ -64,7 +64,7 @@ int main(int argc, char ** argv) {
     // for (vector<int>::size_type i = 0; i < ans.size(); i++) {
     //     cout << ans[i] << endl;
     // } 
-    cout << data.addComment("xin", 123, "good", 1, 5) << endl;
+    //cout << data.addComment("xin", 123, "good", 1, 5) << endl;
 
     return 0;
 }

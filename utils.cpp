@@ -5,7 +5,7 @@ using namespace boost;
 
 void utils::show_help() {
     cout << "Command line usage:" << endl;
-    cout << "\t" << "lda -server -disp <int> -dir <string> -model <string>" << endl;
+    cout << "\t" << "lda -server <int> -disp <int> -dir <string> -model <string> -niters <int> -twords <int> -dfile <string>" << endl;
     cout << '\t' << "lda -pprocess <string> <int>" << endl;
     cout << '\t' << "lda -est -alpha <double> -beta <double> -ntopics <int> -niters <int> -savestep <int> -twords <int> -dfile <string>" << endl;
     cout << '\t' << "lda -estc -dir <string> -model <string> -niters <int> -savestep <int> -twords <int>" << endl;
@@ -14,16 +14,18 @@ void utils::show_help() {
     cout << '\t' << "lda -class -dir model -model model-final" << endl;
 }
 
-vector<int> utils::findCommon(vector<vector<int> >& all, int size, int M) {
+vector<int> utils::findCommon(vector<vector<int>*>& all, int size, int M) {
     vector<pair<int,double> > record;
     vector<int> p;
+    //cout << "here" << endl;
     for (int i = 0; i < M; i++) {
         record.push_back(pair<int,double>(i, 0.0));
     }
 
     for (int i = 0; i < size; i++) {
-        for (int j = 0; j < M; j++) {
-            record[all[i][j]].second += exp(-j);
+        for (int j = 0; j < N_RANKING; j++) {
+            //cout << i << " " << j << " " << (*all[i])[j] << endl;
+            record[(*all[i])[j]].second += exp(-j);
         }
     }
     utils::quicksort(record, 0, record.size()-1);
@@ -65,11 +67,10 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
         cout << "Cannot open file " << ofile << " to read!" << endl;
         return;
     }  
-    boost::regex re("\'");
-    string rep = "\'\'";
-    
+    boost::regex re("\'"); string rep = "\'\'";
+    boost::regex re2("_"); string rep2 = " ";
     tok.parse(ofile, "/\t\n\r");
-    //cout << ofile << endl;
+
     assert(tok.count_tokens() == 4);
     strtok.addToken(tok.token(1)); // M or TV
     strtok.addToken(tok.token(2)); // category
@@ -79,6 +80,7 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
         str = regex_replace(str, re, rep, boost::match_default | boost::format_all);
 
         if (strtok.count_tokens() == 2) {
+            str = regex_replace(str, re2, rep2, boost::match_default | boost::format_all);
             strtok.addToken(str); // title
         } else if (str.find("Released Year:") == 0) {
             strtok.addToken(str.substr(15)); // year
@@ -96,6 +98,12 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
             strtok.addToken(str);
         }
     }
+    str = ofile.substr(ofile.find_last_of("/")+1);
+    int pos = str.find_first_of("]")+1;
+    str = str.substr(pos, str.size()-pos-4);
+    str = regex_replace(str, re, rep, boost::match_default | boost::format_all);
+    strtok.addToken(str);
+    //cout << str << endl;
     fin.close();
 }
 
@@ -208,14 +216,14 @@ void utils::addfile(string name, ofstream& fout, strtokenizer& strtok, vector<pa
 
         strtokenizer strname;
         strname.parse(name, "/");
-        assert(strname.count_tokens() == 3);
+        assert(strname.count_tokens() == 4);
         for (vector<pair<string, int> >::size_type i = 0; i < classes.size(); i++) {
-            if (classes[i].first == strname.token(1)) {
+            if (classes[i].first == strname.token(2)) {
                 classes[i].second += 1;
                 return;
             }
         } 
-        classes.push_back(pair<string, int>(strname.token(1),1));
+        classes.push_back(pair<string, int>(strname.token(2),1));
     } else {
         cout << "Invalid type of file: " << name << endl;
     }
@@ -312,6 +320,44 @@ int utils::parse_args(int argc, char ** argv, model * pmodel, int & port) {
     if (model_status == MODEL_STATUS_SERVER) {
         if (port == 0) {
             port = PORT;
+        }
+        pmodel->disp = disp;
+
+        if (niters > 0) {
+            pmodel->niters = niters;
+        }
+
+        if (twords > 0) {
+            pmodel->twords = twords;
+        }
+
+        if (dir == "") {
+            cout << "Please specify model directory please!" << endl;
+            return 1;
+        }
+        
+        if (model_name == "") {
+            cout << "Please specify model name for inference!" << endl;
+            return 1;
+        }
+        
+        if (dfile == "") {
+            cout << "Please specify the new data file for inference!" << endl;
+            return 1;
+        }
+
+        if (dir[dir.size() - 1] != '/') {
+            dir += "/";
+        }
+        pmodel->dir = dir;
+        
+        pmodel->model_name = model_name;
+
+        pmodel->dfile = dfile;
+
+        // read <model>.others file to assign values for ntopics, alpha, beta, etc.
+        if (read_and_parse(pmodel->dir + pmodel->model_name + pmodel->others_suffix, pmodel)) {
+            return 1;
         }
     }
     

@@ -30,7 +30,7 @@ bool socket::socketListen() const {
 }
 
 bool socket::socketAccept(socket& sock) const {
-    cout << "here" << endl;
+    cout << "here2" << endl;
     socklen_t length = sizeof(sock.addr);
     sock.sockfd = ::accept(sockfd, (sockaddr*) &sock.addr, &length);
     cout << sock.sockfd << endl;
@@ -40,7 +40,7 @@ bool socket::socketAccept(socket& sock) const {
 }
 
 bool socket::send(const string& str) const {
-    int status = ::send(sockfd, str.c_str(), str.size(), WORD_MAX_SIZE);
+    int status = ::send(sockfd, str.c_str(), WORD_MAX_SIZE, 0);
     if (status == -1)
         return false;
     return true;
@@ -58,7 +58,7 @@ int socket::recv (string& str) const {
     int status = ::recv(sockfd, buff, WORD_MAX_SIZE, 0);
     
     if (status == -1) {
-        cout << "error" << endl;
+        cout << "error1" << endl;
         return 0;
     } else if (status == 0)
         return 0;
@@ -68,19 +68,23 @@ int socket::recv (string& str) const {
     }
 }
 
-// bool socket::connect () {
-//     if (!is_valid()) return false;
+void socket::close() {
+    ::close(sockfd);
+}
+
+bool socket::connect () {
+    if (!is_valid()) return false;
     
-//     int status = inet_pton(AF_INET, host.c_str(), &addr.sin_addr);
+    int status = inet_pton(AF_INET, host.c_str(), &addr.sin_addr);
     
-//     if (errno == EAFNOSUPPORT) return false;
+    if (errno == EAFNOSUPPORT) return false;
     
-//     status = connect (sockfd, (sockaddr*) &addr, sizeof(addr));
+    status = ::connect(sockfd, (sockaddr*) &addr, sizeof(addr));
     
-//     if (status == 0)
-//         return true;
-//     return false;
-// }
+    if (status == 0)
+        return true;
+    return false;
+}
 
 // void socket::set_non_blocking (const bool b) {
 //     int opts;
@@ -97,6 +101,15 @@ int socket::recv (string& str) const {
 //     fcntl(sockfd, F_SETFL, opts);
 // }
 
-// string socket::getLocalAddress() {
-//   return inet_ntoa(addr.sin_addr);
-// }
+SocketException::SocketException(const string &message, bool inclSysMsg)
+  throw() : userMessage(message) {
+  if (inclSysMsg) {
+    userMessage.append(": ");
+    userMessage.append(strerror(errno));
+  }
+}
+
+const char *SocketException::what() const throw () {
+  return userMessage.c_str();
+}
+
