@@ -26,7 +26,7 @@ const transmit & transmit::operator >> (string &str) const {
 
 void transmit::SendFile(const vector<string>& info) {
     assert(info.size() == 3);
-    string part = info[0] + "||||" + info[1];
+    string part = info[0] + "||||" + info[1] + "||||" + info[2];
     cout << part << endl;
     if (!socket::send(part))
         throw SocketException("Could not send to socket");

@@ -19,8 +19,8 @@ using namespace boost::math;
 class model {
 public:
     vector<pair<string, int> > movie_classes;
-    string movie_classes_trn_file;// file containing movie classes
-    string movie_classes_pre_file;
+    string classes_trn_file;// file containing movie classes
+    string classes_pre_file;
     string wordmapfile;		// file that contains word map [string -> integer id]
     string trainlogfile;	// training log file
     string tassign_suffix;	// suffix for topic assignment file
@@ -146,7 +146,7 @@ public:
     int init_ranking();
     void ranking();
     vector<int> ranking(vector<int> candidate);
-    vector<int> ranking(vector<int> candidate, string type);
+    vector<int> ranking(vector<int> candidate, string type, string category);
 
     void classification();
 };

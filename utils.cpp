@@ -14,6 +14,30 @@ void utils::show_help() {
     cout << '\t' << "lda -class -dir model -model model-final" << endl;
 }
 
+void utils::genInf(vector<int> candidate) {
+    ifstream fin;
+    fin.open("model/trndata.txt", ifstream::in);
+    string str, tmp;
+
+    for (vector<int>::size_type i = 0; i < candidate.size(); i++) {
+        fin.seekg(0,ios::beg);
+        for(int j = 0; j < candidate[i] + 2; j++) {
+            getline(fin,tmp);
+        }
+        str.append(tmp);
+    }
+
+    ofstream fout;
+    fout.open("model/predata.txt", ofstream::out);
+    fout << 1 << endl;
+    fout << str << endl;
+
+    fin.close();
+    fout.close();
+
+}
+
+
 vector<int> utils::findCommon(vector<vector<int>*>& all, int size, int M) {
     vector<pair<int,double> > record;
     vector<int> p;

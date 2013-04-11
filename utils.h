@@ -32,6 +32,7 @@ public:
     // iter = -1 => final model
     static string generate_model_name(int iter); 
     static vector<int> findCommon(vector<vector<int>* >& all, int size, int M);
+    static void genInf(vector<int> candidate);
 
     static double stod(const string& str); 
     static void show_help();

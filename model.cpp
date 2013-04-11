@@ -119,8 +119,8 @@ void model::set_default_values() {
     phi_suffix = ".phi";
     others_suffix = ".others";
     twords_suffix = ".twords";
-    movie_classes_trn_file = "movie_classes_trn.txt";
-    movie_classes_pre_file = "movie_classes_pre.txt";
+    classes_trn_file = "classes_trn.txt";
+    classes_pre_file = "classes_pre.txt";
     
     dir = "./";
     dfile = "trndocs.dat";
@@ -424,6 +424,7 @@ int model::save_model_twords(string filename) {
 }
 
 int model::save_inf_model(string model_name) {
+    cout << "here" << model_name << endl;
     if (save_inf_model_tassign(dir + model_name + tassign_suffix)) {
         return 1;
     }
@@ -600,7 +601,7 @@ int model::init_est() {
     
     // + read training data
     ptrndata = new dataset;
-    if (ptrndata->read_trndata(dir + movie_classes_trn_file, dir + dfile, dir + wordmapfile, movie_classes)) {
+    if (ptrndata->read_trndata(dir + classes_trn_file, dir + dfile, dir + wordmapfile, movie_classes)) {
         cout << "Fail to read training data!" << endl;
         return 1;
     }
@@ -759,11 +760,11 @@ void model::preprocess() {
     int size = 65535;
     if (file_type == 1) {
         output = "model/trndata.txt";
-        output2 = "model/movie_classes_trn.txt";
+        output2 = "model/classes_trn.txt";
 
     } else if (file_type == 2){
         output = "model/predata.txt";
-        output2 = "model/movie_classes_pre.txt";
+        output2 = "model/classes_pre.txt";
     } else {
         cout << "Invalid file_type" << endl;
     }
@@ -1153,10 +1154,10 @@ void model::compute_newphi() {
 }
 
 int model::init_ranking() {
-    if (load_model(model_name)) {
-        cout << "Fail to load word-topic assignment file of the model!" << endl;
-        return 1;
-    }
+    // if (load_model(model_name)) {
+    //     cout << "Fail to load word-topic assignment file of the model!" << endl;
+    //     return 1;
+    // }
     ifstream in;
     string input = dir + model_name + theta_suffix, str;
 
@@ -1210,38 +1211,121 @@ void model::ranking() {
     }
 }
 
-vector<int> model::ranking(vector<int> candidate) {
+vector<int> model::ranking(vector<int> candidate, string type, string category) {
     // candidate: int - number
-    database db;
-    vector<pair<int,double> > p;
-    vector<vector<int>*> all;
-
-    for (vector<int>::size_type k = 0; k < candidate.size(); k++) {
-        vector<int>* part = new vector<int>();
-        //cout << candidate[k] << " " << k << " " << candidate.size() << endl;
-        p.clear();
-        for (int i = 0; i < M; ++i) {
-            double tmp = 0;
-            if (candidate[k] == i) { 
-                p.push_back(pair<int, double>(i, 0.0));  
-                continue;
-            }
-            for (int j = 0; j < K; ++j) {
-                tmp += theta[i][j] * ndsum[i] * theta[candidate[k]][j] / nwsum[j];
-            }
-            p.push_back(pair<int, double>(i,tmp));
-        }
-        utils::quicksort(p, 0, p.size()-1);
-        for (int i = 0; i < N_RANKING; i++) {
-            part->push_back(p[i].first);
-        }
-        all.push_back(part);
+    utils::genInf(candidate);
+    if (init_inf()) {
+        cout << "error init inference" << endl;
     }
-    return utils::findCommon(all, candidate.size(), M);
-}
+    inference();
+    assert(newM == 1);
 
-vector<int> model::ranking(vector<int> candidate, string type) {
-    return vector<int>();
+    database db;
+    cout << "near" << endl;
+
+    ifstream fin;
+    string line;
+    strtokenizer strtok;
+
+    fin.open((dir + classes_trn_file).c_str(), ifstream::in);
+    if (!fin.is_open()) {
+        cout << "Cannot open file " <<  dir << classes_trn_file<< " to read!" << endl;
+    }
+
+    while(!fin.eof()) {
+        getline(fin, line);
+        strtok.parse(line, " \t\r\n");
+        movie_classes.push_back(pair<string, int>(strtok.token(0), atoi(strtok.token(1).c_str())));
+        cout << movie_classes[movie_classes.size()-1].first << " " << movie_classes[movie_classes.size()-1].second << endl;
+        strtok.clear();
+    }
+    fin.close();
+
+    int start = 0, end = 0;
+    cout << start << " " << end << endl;
+    if (type == "movies" && category != "") {
+        for (vector<string>::size_type i = 0; i < 16; i++) {
+            if (movie_classes[i].first == category) {
+                end = start + movie_classes[i].second;
+                break;
+            }
+            start += movie_classes[i].second;
+        }
+    } else if (type == "TV" && category != "") {
+        for (vector<string>::size_type i = 0; i < 26; i++) {
+            if (i > 15 && movie_classes[i].first == category) {
+                end = start + movie_classes[i].second;
+                break;
+            }
+            start += movie_classes[i].second;
+        }
+    } else if (type == "movies" && category == "") {
+        for (vector<string>::size_type i = 0; i < 16; i++) {
+            end += movie_classes[i].second;
+        }      
+    } else if (type == "TV" && category == "") {
+        for (vector<string>::size_type i = 0; i < 16; i++) {
+            start += movie_classes[i].second;
+        }         
+        end = start;
+        for (vector<string>::size_type i = 16; i < 26; i++) {
+            end += movie_classes[i].second;
+        }       
+    } else {
+        end = M;
+    }
+
+    cout << start << " " << end << endl;
+    vector<pair<int,double> > p;
+    vector<int> ans;
+    for (int i = start; i < end; ++i) {
+        double tmp = 0;
+        for (int j = 0; j < K; ++j) {
+            tmp += theta[i][j]*ndsum[i]*newtheta[0][j]/nwsum[j];
+        }
+        p.push_back(pair<int, double>(i,tmp));
+    }
+    utils::quicksort(p, 0, p.size()-1); 
+
+    for (int i = 0; i < N_DISP; i++) {
+        ans.push_back(p[i].first);
+    }  
+
+    return ans;
+
+
+
+
+
+
+
+
+    // database db;
+    // vector<pair<int,double> > p;
+    // vector<vector<int>*> all;
+
+    // for (vector<int>::size_type k = 0; k < candidate.size(); k++) {
+    //     vector<int>* part = new vector<int>();
+    //     //cout << candidate[k] << " " << k << " " << candidate.size() << endl;
+    //     p.clear();
+    //     for (int i = 0; i < M; ++i) {
+    //         double tmp = 0;
+    //         if (candidate[k] == i) { 
+    //             p.push_back(pair<int, double>(i, 0.0));  
+    //             continue;
+    //         }
+    //         for (int j = 0; j < K; ++j) {
+    //             tmp += theta[i][j] * ndsum[i] * theta[candidate[k]][j] / nwsum[j];
+    //         }
+    //         p.push_back(pair<int, double>(i,tmp));
+    //     }
+    //     utils::quicksort(p, 0, p.size()-1);
+    //     for (int i = 0; i < N_RANKING; i++) {
+    //         part->push_back(p[i].first);
+    //     }
+    //     all.push_back(part);
+    // }
+    // return utils::findCommon(all, candidate.size(), M);
 }
 
 void model::classification() {

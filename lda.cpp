@@ -55,7 +55,7 @@ void operation(transmit& sv, model& lda, transmit * client) {
                 assert(cmd.count_tokens() == 3);
                 /*functions for finding 12 hotest films or TV shows*/
                 vector<int> col = db.hotCollect(cmd.token(1), 10);
-                vector<int> can = lda.ranking(col);
+                vector<int> can = lda.ranking(col,"","");
                     
                 for (int i = 0; i < N_DISP; i++) {
                     sv.accept(*client);
@@ -68,6 +68,7 @@ void operation(transmit& sv, model& lda, transmit * client) {
                 assert(cmd.count_tokens() == 3);
                 /*functions for finding 12 lastest films or TV shows*/
                 vector<int> late = db.fetchLatest(N_DISP);
+                cout << late.size() << endl;
                 for (int i = 0; i < N_DISP; i++) {
                     sv.accept(*client);
                     vector<string> info = db.fetchPic(late[i]);
@@ -77,8 +78,8 @@ void operation(transmit& sv, model& lda, transmit * client) {
             } else if(interface == "movies" && cmd.count_tokens() == 3){
                 /*functions for finding 12 random films*/
                 vector<int> col = db.hotTypeCollect(cmd.token(1), N_DISP, "Movies");
-                vector<int> can = lda.ranking(col);
-                for (int i = 0; i < N_DISP; i++) {
+                vector<int> can = lda.ranking(col, "movies", "");
+                for (int i = 0; i < N_DISP/2; i++) {
                     sv.accept(*client);
                     vector<string> info = db.fetchPic(can[i]);
                     client->SendFile(info);
@@ -87,8 +88,8 @@ void operation(transmit& sv, model& lda, transmit * client) {
             } else if(interface == "movies" && cmd.count_tokens() == 4){
                 /*functions for finding 12 random films with category*/
                 vector<int> col = db.hotTypeCollectWithType(cmd.token(1), N_DISP, "Movies", cmd.token(3));
-                vector<int> can = lda.ranking(col, cmd.token(3));
-                for (int i = 0; i < N_DISP; i++) {
+                vector<int> can = lda.ranking(col, "movies", cmd.token(3));
+                for (int i = 0; i < N_DISP/2; i++) {
                     sv.accept(*client);
                     vector<string> info = db.fetchPic(can[i]);
                     client->SendFile(info);
@@ -97,8 +98,8 @@ void operation(transmit& sv, model& lda, transmit * client) {
             } else if(interface == "TV" && cmd.count_tokens() == 3){
                 /*functions for finding 12 random TV shows*/
                 vector<int> col = db.hotTypeCollect(cmd.token(1), N_DISP, "TV");
-                vector<int> can = lda.ranking(col);
-                for (int i = 0; i < N_DISP; i++) {
+                vector<int> can = lda.ranking(col, "TV", "");
+                for (int i = 0; i < N_DISP/2; i++) {
                     sv.accept(*client);
                     vector<string> info = db.fetchPic(can[i]);
                     client->SendFile(info);
@@ -107,8 +108,8 @@ void operation(transmit& sv, model& lda, transmit * client) {
             } else if(interface == "TV" && cmd.count_tokens() == 4){
                 /*functions for finding 12 random TV shows with category*/
                 vector<int> col = db.hotTypeCollectWithType(cmd.token(1), N_DISP, "TV", cmd.token(3));
-                vector<int> can = lda.ranking(col, cmd.token(3));
-                for (int i = 0; i < N_DISP; i++) {
+                vector<int> can = lda.ranking(col, "TV", cmd.token(3));
+                for (int i = 0; i < N_DISP/2; i++) {
                     sv.accept(*client);
                     vector<string> info = db.fetchPic(can[i]);
                     client->SendFile(info);
@@ -122,6 +123,9 @@ void operation(transmit& sv, model& lda, transmit * client) {
                 if (can.empty()) { 
                     *client << "Emtpy favourites";
                 } else {
+                    stringstream out;
+                    out << num;
+                    *client << out.str();
                     for (int i = 0; i < num; i++) {
                         sv.accept(*client);
                         vector<string> info = db.fetchPic(can[i]);
@@ -164,7 +168,16 @@ void operation(transmit& sv, model& lda, transmit * client) {
             assert(cmd.count_tokens() == 2);
             cout << cmd.token(1)<< endl;
             vector<int> p = db.search(cmd.token(1), 10, 0);
-            for (int i = 0; i < 10; i++) {
+            
+            stringstream out;
+            if (p.size() > 10) {
+                out << 10;
+            } else {
+                out << p.size();
+            }
+            *client << out.str();
+
+            for (int i = 0; i < (int)p.size(); i++) {
                 sv.accept(*client);
                 vector<string> info = db.fetchPic(p[i]);
                 client->SendFile(info);

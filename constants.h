@@ -16,7 +16,7 @@
 #define LISTENQ 20
 #define BUFFSIZE 4096
 #define FILE_NAME_MAX_SIZE 512
-#define WORD_MAX_SIZE 64
+#define WORD_MAX_SIZE 256
 
 struct MovieData {
 	char name[100];
