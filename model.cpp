@@ -1252,7 +1252,7 @@ vector<int> model::ranking(vector<int> candidate, string type, string category) 
             start += movie_classes[i].second;
         }
     } else if (type == "TV" && category != "") {
-        for (vector<string>::size_type i = 0; i < 26; i++) {
+        for (vector<string>::size_type i = 0; i < 28; i++) {
             if (i > 15 && movie_classes[i].first == category) {
                 end = start + movie_classes[i].second;
                 break;
@@ -1268,7 +1268,7 @@ vector<int> model::ranking(vector<int> candidate, string type, string category) 
             start += movie_classes[i].second;
         }         
         end = start;
-        for (vector<string>::size_type i = 16; i < 26; i++) {
+        for (vector<string>::size_type i = 16; i < 28; i++) {
             end += movie_classes[i].second;
         }       
     } else {

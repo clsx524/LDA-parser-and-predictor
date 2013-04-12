@@ -26,6 +26,8 @@ struct MovieData {
 	char cast[500];
 	char pic[200];
 	char number[20];
+	//char favourite;
+	//char score[10];
 	char content[10000];
 	char wiki[10000];
 };
