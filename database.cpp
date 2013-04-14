@@ -151,6 +151,7 @@ vector<int> database::search(const string& query, int num, int pos) const {
 		while (res->next()) {
 			p.push_back(res->getInt("number"));
 			row++;
+			if (row == num) {break;}
 		}
 		stmt.reset(NULL);
 	} catch (sql::SQLException &e) {
@@ -160,9 +161,9 @@ vector<int> database::search(const string& query, int num, int pos) const {
 	return p;	
 }
 
-vector<string> database::preciseFetch(int index) const {
+string database::preciseFetch(int index) const {
 	stringstream out;
-	vector<string> arg;
+	string arg, tmp;
 	try {
 		auto_ptr<Connection> con(driver->connect(url, user, password));
 		auto_ptr<Statement> stmt(con->createStatement());
@@ -172,16 +173,36 @@ vector<string> database::preciseFetch(int index) const {
 		std::auto_ptr<ResultSet> res(stmt->executeQuery(out.str()));
 		cout << "# Fetching search for " << index << endl;
 		if (res->next()) {
-			arg.push_back(res->getString("title"));
-			arg.push_back(res->getString("year"));
-			arg.push_back(res->getString("length"));
-			arg.push_back(res->getString("director"));
-			arg.push_back(res->getString("cast"));
-			arg.push_back(res->getString("content"));
-			arg.push_back(res->getString("wiki"));
+			arg = res->getString("title");
+			arg.append("^^^^^");
+			arg.append(res->getString("year"));
+			arg.append("^^^^^");
+			arg.append(res->getString("length"));
+			arg.append("^^^^^");
+			if ((tmp=res->getString("director")) == "") {
+				arg.append("TBD");
+			} else {
+				arg.append(tmp);
+			}
+			arg.append("^^^^^");
+			if ((tmp=res->getString("cast")) == "") {
+				arg.append("TBD");
+			} else {
+				arg.append(tmp);
+			}
+			arg.append("^^^^^");
+			if ((tmp=res->getString("content")) == "") {
+				arg.append("TBD");
+			} else {
+				arg.append(tmp);
+			}
+			arg.append("^^^^^");
+			//arg.push_back(res->getString("wiki"));
 			string pic = res->getString("pic");
-			arg.push_back(pic.substr(pic.find_last_of("/")+1));
-			arg.push_back(res->getString("number"));
+			pic = "temp/" + pic;
+			arg.append(pic.substr(pic.find_last_of("/")+1));
+			arg.append("^^^^^");
+			arg.append(res->getString("number"));
 		} 
 		stmt.reset(NULL);
 	} catch (sql::SQLException &e) {
@@ -352,12 +373,14 @@ vector<int> database::hotTypeCollectWithType(string username, int num, string ty
 vector<int> database::FavoriteCollect(string username, int num) {
 	int row = 0;
 	vector<int> p;
+	stringstream msg;
 	try {
 		auto_ptr<Connection> con(driver->connect(url, user, password));
 		auto_ptr<Statement> stmt(con->createStatement());
 
 		stmt->execute("USE " + db);
-		std::auto_ptr<ResultSet> res(stmt->executeQuery("SELECT username, favorite, score, number, type FROM comments WHERE favorite=1 ORDER BY score DESC"));
+		msg << "SELECT username, favorite, score, number, type FROM comments WHERE favorite=1 AND username='" << username << "' ORDER BY score DESC";
+		std::auto_ptr<ResultSet> res(stmt->executeQuery(msg.str()));
 		row = 0;
 		while (res->next()) {
 			p.push_back(res->getInt("number"));

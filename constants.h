@@ -28,8 +28,8 @@ struct MovieData {
 	char number[20];
 	//char favourite;
 	//char score[10];
-	char content[10000];
-	char wiki[10000];
+	char content[5000];
+	//char wiki[10000];
 };
 
 #endif

@@ -1,8 +1,10 @@
 LDA parser and predictor
 ==========
 
+Before using this program, you should first install boost C++ library to support regex and mysql to support database access.
+
 ## preprocess the files
-	./lda -pprocess test1 1 // generate training files
+	./lda -pprocess info 1 // generate training files
 	./lda -pprocess test2 2 // generate predict files
 	
 ## training 
@@ -18,4 +20,4 @@ LDA parser and predictor
 	./lda -class -dir model -model model-final
 	
 ## server
-	./lda -server 6000 -disp 12 -dir model -model model-final -niters 5 -twords 20 -dfile model/predata.txt
+	./lda -server 6000 -disp 12 -dir model -model model-final -niters 5 -twords 20 -dfile predata.txt

@@ -26,8 +26,10 @@ const transmit & transmit::operator >> (string &str) const {
 
 void transmit::SendFile(const vector<string>& info) {
     assert(info.size() == 3);
-    string part = info[0] + "||||" + info[1] + "||||" + info[2];
+    string pic = "temp/" + info[2].substr(info[2].find_last_of("/")+1);
+    string part = info[0] + "||||" + info[1] + "||||" + pic;
     cout << part << endl;
+
     if (!socket::send(part))
         throw SocketException("Could not send to socket");
 
@@ -52,10 +54,10 @@ void transmit::SendFile(const vector<string>& info) {
     }
 }
 
-void transmit::SendStruct(vector<string>& arg){
-    struct MovieData movie;
-    SetContent(movie, arg);
-    if(!socket::send((char*)&movie,sizeof(movie))) {
+void transmit::SendStruct(string arg){
+    //struct MovieData movie;
+    //SetContent(movie, arg);
+    if(!socket::send((char*)arg.c_str(), BUFFSIZE)) {
         throw SocketException("Could not send struct");
     }
     printf("Struct file finished !\n");
@@ -67,10 +69,9 @@ void transmit::SetContent(struct MovieData &movie, vector<string>& arg) {
     memcpy(movie.length, arg[2].c_str(), arg[2].size()); cout << arg[2] << endl;
     memcpy(movie.director, arg[3].c_str(), arg[3].size()); cout << arg[3] << endl;
     memcpy(movie.cast, arg[4].c_str(), arg[4].size()); cout << arg[4] << endl;
+    memcpy(movie.pic,arg[6].c_str(), arg[6].size()); cout << arg[6] << endl;
+    memcpy(movie.number,arg[7].c_str(), arg[7].size()); cout << arg[7] << endl;
     memcpy(movie.content, arg[5].c_str(), arg[5].size()); cout << arg[5] << endl;
-    memcpy(movie.wiki,arg[6].c_str(), arg[6].size()); cout << arg[6] << endl;
-    memcpy(movie.pic,arg[7].c_str(), arg[7].size()); cout << arg[7] << endl;
-    memcpy(movie.number,arg[8].c_str(), arg[8].size()); cout << arg[8] << endl;
 }
 
 

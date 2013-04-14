@@ -120,6 +120,7 @@ void operation(transmit& sv, model& lda, transmit * client) {
                 /*functions for finding 12 favourites for user*/
                 vector<int> can = db.FavoriteCollect(cmd.token(1), N_DISP);
                 int num = can.size();
+                cout << "favourites number=" << num << endl;
                 if (can.empty()) { 
                     *client << "Emtpy favourites";
                 } else {
@@ -137,8 +138,9 @@ void operation(transmit& sv, model& lda, transmit * client) {
                 //display + number + MTDetails
                 assert(cmd.count_tokens() == 3);
                 int i = atoi(cmd.token(1).c_str());
-                vector<string> arg = db.preciseFetch(i);
-                assert(arg.size() == 9);
+                cout << "asking for " << i << endl;
+                string arg = db.preciseFetch(i);
+                cout << arg << endl;
                 client->SendStruct(arg);
                 client->close();
                 // send pic
@@ -170,11 +172,7 @@ void operation(transmit& sv, model& lda, transmit * client) {
             vector<int> p = db.search(cmd.token(1), 10, 0);
             
             stringstream out;
-            if (p.size() > 10) {
-                out << 10;
-            } else {
-                out << p.size();
-            }
+            out << p.size();
             *client << out.str();
 
             for (int i = 0; i < (int)p.size(); i++) {

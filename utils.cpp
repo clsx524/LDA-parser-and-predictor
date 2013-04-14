@@ -93,6 +93,7 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
     }  
     boost::regex re("\'"); string rep = "\'\'";
     boost::regex re2("_"); string rep2 = " ";
+    boost::regex re3("&&nbsp;");
     tok.parse(ofile, "/\t\n\r");
 
     assert(tok.count_tokens() == 4);
@@ -115,10 +116,12 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
         } else if (str.find("Cast:") == 0) {
             strtok.addToken(str.substr(6)); // cast
         } else if (str.find("Content:") == 0) {
+            str = regex_replace(str, re3, rep2, boost::match_default | boost::format_all);
             strtok.addToken(str.substr(9)); // content
         } else if (str.find("Wiki info:") == 0 || str == "") {
             continue; // wiki
         } else {
+            str = regex_replace(str, re3, rep2, boost::match_default | boost::format_all);
             strtok.addToken(str);
         }
     }

@@ -44,7 +44,7 @@ public:
 
     void SendFile(const vector<string>& info);
 
-    void SendStruct(vector<string>& arg);
+    void SendStruct(string arg);
 
     void SetContent(struct MovieData &movie, vector<string>& arg);
 
