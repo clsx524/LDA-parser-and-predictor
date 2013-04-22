@@ -120,9 +120,11 @@ void utils::readfile(string ofile, strtokenizer& strtok) {
             strtok.addToken(str.substr(9)); // content
         } else if (str.find("Wiki info:") == 0 || str == "") {
             continue; // wiki
-        } else {
+        } else if (strtok.count_tokens() > 7){
             str = regex_replace(str, re3, rep2, boost::match_default | boost::format_all);
             strtok.addToken(str);
+        } else {
+            continue;
         }
     }
     str = ofile.substr(ofile.find_last_of("/")+1);

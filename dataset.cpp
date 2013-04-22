@@ -93,20 +93,17 @@ int dataset::read_trndata(string classfile, string dfile, string wordmapfile, ve
     strtokenizer strtok;
 
     fin.open(classfile.c_str(), ifstream::in);
-    if (!fin.is_open()) {
-        cout << "Cannot open file " <<  classfile << " to read!" << endl;
-        return 1;
-    }
-
-    while(!fin.eof()) {
+    if (fin.is_open()) {
+        while(!fin.eof()) {
         getline(fin, line);
         strtok.parse(line, " \t\r\n");
         movie_classes.push_back(pair<string, int>(strtok.token(0), atoi(strtok.token(1).c_str())));
         cout << movie_classes[movie_classes.size()-1].first << " " << movie_classes[movie_classes.size()-1].second << endl;
         strtok.clear();
+        }    
     }
     fin.close();
-
+    
     fin.open(dfile.c_str(), ifstream::in);
     if (!fin.is_open()) {
 		cout << "Cannot open file " <<  dfile << " to read!" << endl;
@@ -177,7 +174,38 @@ int dataset::read_trndata(string classfile, string dfile, string wordmapfile, ve
     // update number of words
     V = word2id.size();
     
+    if (write_all(M, V, docs)) {
+    	return 1;
+    }
+    
     return 0;
+}
+
+int dataset::write_all(int M, int V, document ** docs) {
+	ofstream fout;
+	fout.open("model/alldata.dat", ofstream::out);
+	
+	if (!fout.is_open()) {
+		cout << "can't create data file." << endl;
+		return 1;
+	}
+	
+	fout << M << endl;
+	fout << V << endl;
+	
+	int length = 0, m = 0;
+	for (int i = 0; i < M; i++) {
+		length = docs[i]->length;
+		for (int j = 0; j < length; j++) {
+			fout << docs[i]->words[j]+1 << " ";
+		}
+		fout << endl;
+		m++;
+	}
+	assert(m == M);
+	
+	fout.close();
+	return 0;
 }
 
 int dataset::read_newdata(string dfile, string wordmapfile) {

@@ -71,7 +71,8 @@ public:
     int * ndsum;            // ndsum[i]: total number of words in document i, size M
     double ** theta;        // theta: document-topic distributions, size M x K
     double ** phi;          // phi: topic-word distributions, size K x V
-    
+    double *alpha0, *beta0;
+    double sumalpha, sumbeta;
     // for inference only
     int inf_liter;
     int newM;

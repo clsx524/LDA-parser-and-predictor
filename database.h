@@ -60,6 +60,7 @@ public:
 	bool login(const string& name, const string& pwd) const;
 	bool changePassword(const string& name, const string& origin, const string& pwd) const;
 	vector<int> search(const string& query, int num, int pos) const;
+	void preciseFetchDisp(int index) const;
 	string preciseFetch(int index) const;
 	vector<string> fetchPic(int index);
 	vector<int> fetchLatest(int num);

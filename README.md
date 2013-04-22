@@ -8,7 +8,7 @@ Before using this program, you should first install boost C++ library to support
 	./lda -pprocess test2 2 // generate predict files
 	
 ## training 
-	./lda -est -alpha 0.479358 -beta 0.08 -ntopics 16 -niters 3000 -savestep 100 -twords 20 -dfile model/trndata.txt
+	./lda -est -alpha 0.7912 -beta 0.00464 -ntopics 50 -niters 1000 -savestep 10 -twords 20 -dfile model/trndata.txt
 	
 ## prediction
 	./lda -inf -dir model -model model-final -niters 30 -twords 20 -dfile model/predata.txt

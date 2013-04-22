@@ -161,6 +161,28 @@ vector<int> database::search(const string& query, int num, int pos) const {
 	return p;	
 }
 
+void database::preciseFetchDisp(int index) const {
+	stringstream out;
+	try {
+		auto_ptr<Connection> con(driver->connect(url, user, password));
+		auto_ptr<Statement> stmt(con->createStatement());
+
+		stmt->execute("USE " + db);
+		out << "SELECT title, length, director, cast, year, content, number, wiki, pic FROM media_info WHERE number=" << index;
+		std::auto_ptr<ResultSet> res(stmt->executeQuery(out.str()));
+		cout << "# Fetching search for " << index << endl;
+		if (res->next()) {
+			cout << "title: " << res->getString("title") << endl;
+			cout << "content: " << res->getString("content") << endl;
+		} 
+		stmt.reset(NULL);
+	} catch (sql::SQLException &e) {
+		cout << "#Error: " << e.what() << " (MySQL error code: " << e.getErrorCode();
+		cout << ", SQLState: " << e.getSQLState() << " )" << endl;
+	}
+	return;	
+}
+
 string database::preciseFetch(int index) const {
 	stringstream out;
 	string arg, tmp;

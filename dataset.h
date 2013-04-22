@@ -150,6 +150,7 @@ public:
     int read_trndata(string classfile, string dfile, string wordmapfile, vector<pair<string, int> >& movie_classes);
     int read_newdata(string dfile, string wordmapfile);
     int read_newdata_withrawstrs(string dfile, string wordmapfile);
+    int write_all(int M, int V, document ** docs);
 };
 
 #endif

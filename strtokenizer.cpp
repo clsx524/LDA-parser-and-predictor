@@ -17,11 +17,10 @@ void strtokenizer::split(string str, string seperators, bool preEnable) {
 
 void strtokenizer::preprocess(string text) {
     text = verify(text);
-    if (text.size() > 2) {
-        text = stem(text);
-    } else {
-        return;
-    }
+    if (text.size() <= 2) { return; }
+    text = stem(text);
+    if (text.size() <= 2) { return; }
+
     text = stopword_remover(text);
     if (text != "") {
         tokens.push_back(text);

@@ -18,7 +18,7 @@ const transmit& transmit::operator << (const string &str) const {
 }
 
 
-const transmit & transmit::operator >> (string &str) const {
+const transmit& transmit::operator >> (string &str) const {
     if (!socket::recv(str))
         throw SocketException("Could not read from socket");
     return *this;

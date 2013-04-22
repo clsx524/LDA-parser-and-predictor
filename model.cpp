@@ -593,7 +593,6 @@ int model::save_inf_model_twords(string filename) {
     return 0;
 }
 
-
 int model::init_est() {
     int m, n, w, k;
 
@@ -680,7 +679,16 @@ int model::init_est() {
     for (k = 0; k < K; k++) {
         phi[k] = new double[V];
     }
-    
+
+    alpha0 = new double[K]; 
+    for (k = 0; k < K; k++) {
+        alpha0[k] = alpha;
+    }
+
+    beta0 = new double[V];
+    for (k = 0; k < V; k++) {
+        beta0[k] = beta;
+    }
     return 0;
 }
 
@@ -788,10 +796,11 @@ void model::preprocess() {
 }
 
 void model::estimate() {
-    ofstream fout;
+    ofstream fout, fout2;
     fout.open("model/alpha.txt", ofstream::out);
+    fout2.open("model/beta.txt", ofstream::out);
 
-    if (!fout.is_open()) {
+    if (!fout.is_open() || !fout2.is_open()) {
         cout << "can't open file" << endl;
         return;
     }
@@ -805,6 +814,18 @@ void model::estimate() {
     int last_iter = liter;
     for (liter = last_iter + 1; liter <= niters + last_iter; liter++) {
         cout << "Iteration " << liter << " ..." << endl;
+
+        sumalpha = 0;
+        for (int i = 0; i < K; i++) {
+            sumalpha += alpha0[i];
+        }
+        alpha = sumalpha / K;
+
+        sumbeta = 0;
+        for (int i = 0; i < V; i++) {
+            sumbeta += beta0[i];
+        }
+        beta = sumbeta / V;
         
 	    // for all z_i
 	    for (int m = 0; m < M; m++) {
@@ -815,28 +836,44 @@ void model::estimate() {
                 z[m][n] = topic;
 	        }
 	    }
-            fout << alpha << " " << beta << endl;
+            compute_theta();
+            compute_phi();
+            compute_alpha();
+            compute_beta();
+            for (int i = 0; i < K; i++) {
+                fout << alpha0[i] << " ";
+            }
+            fout << endl;
+
+            for (int i = 0; i < V; i++) {
+                fout2 << beta0[i] << " ";
+            }
+            fout2 << endl;         
+
             cout << alpha << " " << beta << endl;
 	    if (savestep > 0 && liter % savestep == 0) {
             // saving the model
             cout << "Saving the model at iteration " << liter << " ..." << endl;
-            //compute_alpha();
-            //compute_beta();
-            compute_theta();
-            compute_phi();
-
+            // compute_alpha();
+            // compute_beta();
+            // compute_theta();
+            // compute_phi();
             save_model(utils::generate_model_name(liter));
 	    }
     }
     
     cout << "Gibbs sampling completed!" << endl;
     cout << "Saving the final model!" << endl;
-    //compute_alpha();
-    //compute_beta();
+
     compute_theta();
     compute_phi();
+    compute_alpha();
+    compute_beta();
     liter--;
     save_model(utils::generate_model_name(-1));
+
+    fout.close();
+    fout2.close();
 }
 
 int model::sampling(int m, int n) {
@@ -848,13 +885,13 @@ int model::sampling(int m, int n) {
     nwsum[topic] -= 1;
     ndsum[m] -= 1;
     
-    double Kalpha = K * alpha;
-    double Vbeta = V * beta;
+    //double Kalpha = K * alpha;
+    //double Vbeta = V * beta;
 
     // do multinomial sampling via cumulative method
     for (int k = 0; k < K; k++) {
-	    p[k] = (nw[w][k] + beta) / (nwsum[k] + Vbeta) *
-        (nd[m][k] + alpha) / (ndsum[m] + Kalpha);
+	    p[k] = (nw[w][k] + beta0[w]) / (nwsum[k] + sumbeta) *
+        (nd[m][k] + alpha0[k]); /// (ndsum[m] + Kalpha);
     }
     // cumulate multinomial parameters
     for (int k = 1; k < K; k++) {
@@ -880,7 +917,7 @@ int model::sampling(int m, int n) {
 void model::compute_theta() {
     for (int m = 0; m < M; m++) {
         for (int k = 0; k < K; k++) {
-            theta[m][k] = (nd[m][k] + alpha) / (ndsum[m] + K * alpha);
+            theta[m][k] = (nd[m][k] + alpha0[k]) / (ndsum[m] + sumalpha);
         }
     }
 }
@@ -888,41 +925,44 @@ void model::compute_theta() {
 void model::compute_phi() {
     for (int k = 0; k < K; k++) {
         for (int w = 0; w < V; w++) {
-            phi[k][w] = (nw[w][k] + beta) / (nwsum[k] + V * beta);
+            phi[k][w] = (nw[w][k] + beta0[w]) / (nwsum[k] + sumbeta);
         }
     }
 }
 
 void model::compute_alpha() {
-    int sum1 = 0, sum2 = 0;
-    for (int i = 0; i < K; i++) {
-        for (int j = 0; j < M; j++) {
-            sum1 += digamma(nd[j][i] + alpha);
-        }
-    }
+    double sum1 = 0, sum2 = 0;
 
     for (int j = 0; j < M; j++) {
-        sum2 += digamma(ndsum[j] + K * alpha);
+        sum2 += digamma(ndsum[j] + sumalpha);
     }
 
-    alpha = alpha * (sum1 / K - M * digamma(alpha)) / (sum2 - M * digamma(K * alpha));
-    
+    for (int i = 0; i < K; i++) {
+        sum1 = 0;
+        for (int j = 0; j < M; j++) {
+            sum1 += digamma(nd[j][i] + alpha0[i]);
+        }
+        alpha0[i] = alpha0[i] * (sum1 - M * digamma(alpha0[i])) / (sum2 - M * digamma(sumalpha));
+    }
 }
 
 void model::compute_beta() {
-    int sum1 = 0, sum2 = 0;
+    double sum1 = 0, sum2 = 0;
 
     for (int i = 0; i < K; i++) {
-        for (int j = 0; j < V; j++) {
-            sum1 += digamma(nw[j][i] + beta);
+        sum2 += digamma(nwsum[i] + sumbeta);
+    }
+
+    for (int j = 0; j < V; j++) {
+        sum1 = 0;
+        //for (int i = 0; i < V; i++) {
+        //    sumbeta += beta0[i];
+        //}
+        for (int i = 0; i < K; i++) {
+            sum1 += digamma(nw[j][i] + beta0[j]);
         }
+        beta0[j] = beta0[j] * (sum1 - K * digamma(beta0[j])) / (sum2 - digamma(sumbeta));
     }
-
-    for (int j = 0; j < K; j++) {
-        sum2 += digamma(nwsum[j] + V * beta);
-    }
-
-    beta = beta * (sum1 / V - K * digamma(beta)) / (sum2 - K * digamma(V * beta));
 }
 
 int model::init_inf() {
@@ -1189,7 +1229,7 @@ void model::ranking() {
     assert(rank_num > 0 && rank_num <= M);
     database db;
     cout << " =============== " << rank_num << " =============== " << endl;
-    db.preciseFetch(rank_num);
+    db.preciseFetchDisp(rank_num);
 
     vector<pair<int,double> > p;
     for (int i = 0; i < M; ++i) {
@@ -1207,7 +1247,7 @@ void model::ranking() {
 
     for (int i = 0; i < disp; ++i) {
         cout << " =============== " << p[i].first << " =============== " << endl;
-        db.preciseFetch(p[i].first);
+        db.preciseFetchDisp(p[i].first);
     }
 }
 
