@@ -680,10 +680,15 @@ int model::init_est() {
         phi[k] = new double[V];
     }
 
-    alpha0 = new double[K]; 
-    for (k = 0; k < K; k++) {
-        alpha0[k] = alpha;
-    }
+    //alpha0 = new double[K]; 
+    //for (k = 0; k < K; k++) {
+    //    alpha0[k] = alpha;
+    //}
+
+    a = 1;
+    b = 20;
+    c = 3;
+    d = 100;
 
     beta0 = new double[V];
     for (k = 0; k < V; k++) {
@@ -808,6 +813,12 @@ void model::estimate() {
         // print out top words per topic
         dataset::read_wordmap(dir + wordmapfile, &id2word);
     }
+
+    sumbeta = 0;
+    for (int i = 0; i < V; i++) {
+        sumbeta += beta0[i];
+    }
+    beta = sumbeta / V;
     
     cout << "Sampling " << niters << " iterations!" << endl;
     
@@ -815,17 +826,11 @@ void model::estimate() {
     for (liter = last_iter + 1; liter <= niters + last_iter; liter++) {
         cout << "Iteration " << liter << " ..." << endl;
 
-        sumalpha = 0;
-        for (int i = 0; i < K; i++) {
-            sumalpha += alpha0[i];
-        }
-        alpha = sumalpha / K;
-
-        sumbeta = 0;
-        for (int i = 0; i < V; i++) {
-            sumbeta += beta0[i];
-        }
-        beta = sumbeta / V;
+        //sumalpha = 0;
+        //for (int i = 0; i < K; i++) {
+        //    sumalpha += alpha0[i];
+        //}
+        //alpha = sumalpha / K;
         
 	    // for all z_i
 	    for (int m = 0; m < M; m++) {
@@ -836,28 +841,33 @@ void model::estimate() {
                 z[m][n] = topic;
 	        }
 	    }
-            compute_theta();
-            compute_phi();
-            compute_alpha();
-            compute_beta();
-            for (int i = 0; i < K; i++) {
-                fout << alpha0[i] << " ";
-            }
-            fout << endl;
+            //for (int i = 0; i < K; i++) {
+            //    fout << alpha0[i] << " ";
+            //}
+            //fout << endl;
+            
+            //for (int i = 0; i < V; i++) {
+            //    fout2 << beta0[i] << " ";
+            //}
+            //fout2 << endl; 
 
-            for (int i = 0; i < V; i++) {
-                fout2 << beta0[i] << " ";
-            }
-            fout2 << endl;         
-
+            //sumbeta = 0;
+            //for (int i = 0; i < V; i++) {
+            //    sumbeta += beta0[i];
+            //}
+            //beta = sumbeta / V;
+            fout << alpha << " " << beta << endl;
             cout << alpha << " " << beta << endl;
+        if (liter % 10 == 0) {
+            //compute_alpha();
+            //compute_beta();
+            compute_theta();
+            compute_phi();            
+        }
+
 	    if (savestep > 0 && liter % savestep == 0) {
             // saving the model
             cout << "Saving the model at iteration " << liter << " ..." << endl;
-            // compute_alpha();
-            // compute_beta();
-            // compute_theta();
-            // compute_phi();
             save_model(utils::generate_model_name(liter));
 	    }
     }
@@ -867,8 +877,8 @@ void model::estimate() {
 
     compute_theta();
     compute_phi();
-    compute_alpha();
-    compute_beta();
+    //compute_alpha();
+    //compute_beta();
     liter--;
     save_model(utils::generate_model_name(-1));
 
@@ -891,7 +901,7 @@ int model::sampling(int m, int n) {
     // do multinomial sampling via cumulative method
     for (int k = 0; k < K; k++) {
 	    p[k] = (nw[w][k] + beta0[w]) / (nwsum[k] + sumbeta) *
-        (nd[m][k] + alpha0[k]); /// (ndsum[m] + Kalpha);
+        (nd[m][k] + alpha); /// (ndsum[m] + Kalpha);
     }
     // cumulate multinomial parameters
     for (int k = 1; k < K; k++) {
@@ -917,7 +927,7 @@ int model::sampling(int m, int n) {
 void model::compute_theta() {
     for (int m = 0; m < M; m++) {
         for (int k = 0; k < K; k++) {
-            theta[m][k] = (nd[m][k] + alpha0[k]) / (ndsum[m] + sumalpha);
+            theta[m][k] = (nd[m][k] + alpha) / (ndsum[m] + K * alpha);
         }
     }
 }
@@ -934,16 +944,16 @@ void model::compute_alpha() {
     double sum1 = 0, sum2 = 0;
 
     for (int j = 0; j < M; j++) {
-        sum2 += digamma(ndsum[j] + sumalpha);
+        sum2 += digamma(ndsum[j] + K * alpha);
     }
 
     for (int i = 0; i < K; i++) {
-        sum1 = 0;
         for (int j = 0; j < M; j++) {
-            sum1 += digamma(nd[j][i] + alpha0[i]);
+            sum1 += digamma(nd[j][i] + alpha);
         }
-        alpha0[i] = alpha0[i] * (sum1 - M * digamma(alpha0[i])) / (sum2 - M * digamma(sumalpha));
+        
     }
+    alpha = alpha * (a - 1 + sum1 / K - M * digamma(alpha)) / (b + sum2 - M * digamma(K * alpha));
 }
 
 void model::compute_beta() {
@@ -961,7 +971,7 @@ void model::compute_beta() {
         for (int i = 0; i < K; i++) {
             sum1 += digamma(nw[j][i] + beta0[j]);
         }
-        beta0[j] = beta0[j] * (sum1 - K * digamma(beta0[j])) / (sum2 - digamma(sumbeta));
+        beta0[j] = beta0[j] * (c - 1 + sum1 - K * digamma(beta0[j])) / (d + sum2 - digamma(sumbeta));
     }
 }
 
@@ -1226,10 +1236,11 @@ int model::init_ranking() {
 }
 
 void model::ranking() {
-    assert(rank_num > 0 && rank_num <= M);
+    rank_num = rank_num - 1;
+    assert(rank_num >= 0 && rank_num < M);
     database db;
-    cout << " =============== " << rank_num << " =============== " << endl;
-    db.preciseFetchDisp(rank_num);
+    cout << " =============== " << rank_num+1 << " =============== " << endl;
+    db.preciseFetchDisp(rank_num+1);
 
     vector<pair<int,double> > p;
     for (int i = 0; i < M; ++i) {
@@ -1246,8 +1257,8 @@ void model::ranking() {
     utils::quicksort(p, 0, p.size()-1);
 
     for (int i = 0; i < disp; ++i) {
-        cout << " =============== " << p[i].first << " =============== " << endl;
-        db.preciseFetchDisp(p[i].first);
+        cout << " =============== " << p[i].first+1 << " =============== " << endl;
+        db.preciseFetchDisp(p[i].first+1);
     }
 }
 

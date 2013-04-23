@@ -21,3 +21,12 @@ Before using this program, you should first install boost C++ library to support
 	
 ## server
 	./lda -server 6000 -disp 12 -dir model -model model-final -niters 5 -twords 20 -dfile predata.txt
+	
+
+1000 group
+10000 iterations, topics size 100init: alpha = 0.8, beta = 0.1thinning interval = 10 iterationsposterior mean for α is 0.050982006.posterior mean for β is 0.002609193.95% credential interval for α is [0.0502137 0.0519432]. 
+95% credential interval for β is [0.00259244 0.00262603].
+
+5600 group
+10000 iterations, topics size 100init: alpha = 0.8, beta = 0.1thinning interval = 10 iterationsposterior mean for α is 0.026575741.posterior mean for β is 0.002815483.95% credential interval for α is [0.0262913 0.0268430]. 
+95% credential interval for β is [0.00280798 0.00282316].

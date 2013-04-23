@@ -1,0 +1,5 @@
+setwd("/Users/eric/Dropbox/GitHub/LDA-parser-and-predictor/model")
+Y <- read.table("alpha.txt", head = FALSE)
+Y.mean <- apply(Y[3101:10000,],2,mean)
+quantile(Y[3101:10000,1],c(0.025,0.975))
+quantile(Y[3101:10000,2],c(0.025,0.975))
